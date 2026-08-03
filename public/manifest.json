@@ -1,0 +1,23 @@
+{
+  "short_name": "คอลีฟะห์ PWA",
+  "name": "Khalifah Student Discipline Management System",
+  "description": "ระบบจัดการระเบียบวินัยและบันทึกการละหมาด/หะละเกาะฮ์ นักศึกษาห้องเรียนคอลีฟะห์ มหาวิทยาลัยฟาฏอนี",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=192&q=80",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=512&q=80",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F5132",
+  "theme_color": "#0F5132",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "th-TH"
+}

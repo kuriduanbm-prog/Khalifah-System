@@ -1,0 +1,8 @@
+{
+  "name": "Khalifah Student Discipline Management System",
+  "description": "ระบบจัดการระเบียบวินัยและบันทึกการละหมาด/หะละเกาะฮ์ นักศึกษาห้องเรียนคอลีฟะห์ คณะวิทยาศาสตร์และเทคโนโลยี มหาวิทยาลัยฟาฏอนี",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

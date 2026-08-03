@@ -1,0 +1,79 @@
+/* Material Design 3 - Green Islamic Theme Stylesheet */
+:root {
+  --md-sys-color-primary: #0F5132;
+  --md-sys-color-on-primary: #FFFFFF;
+  --md-sys-color-primary-container: #D1E7DD;
+  --md-sys-color-gold: #D4AF37;
+  --md-sys-color-surface: #F8FAF8;
+  --md-sys-color-on-surface: #191C1A;
+  --font-family: 'Sukhumvit Set', 'Prompt', system-ui, -apple-system, sans-serif;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(15, 81, 50, 0.2);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 81, 50, 0.4);
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+  header, nav, aside, button, #snackbar-container {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:p-0 {
+    padding: 0 !important;
+  }
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+}
