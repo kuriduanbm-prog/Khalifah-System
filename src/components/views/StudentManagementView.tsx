@@ -48,6 +48,7 @@ export const StudentManagementView: React.FC = () => {
     id: '',
     fullName: '',
     nickname: '',
+    futureCareer: '',
     faculty: 'คณะวิทยาศาสตร์และเทคโนโลยี',
     programme: 'วิทยาการคอมพิวเตอร์',
     year: 1,
@@ -125,6 +126,7 @@ export const StudentManagementView: React.FC = () => {
       id: `6712100${Math.floor(10 + Math.random() * 80)}`,
       fullName: '',
       nickname: '',
+      futureCareer: '',
       faculty: 'คณะวิทยาศาสตร์และเทคโนโลยี',
       programme: 'วิทยาการคอมพิวเตอร์',
       year: 1,
@@ -397,6 +399,20 @@ export const StudentManagementView: React.FC = () => {
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-slate-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-amber-600 dark:text-amber-400 mb-1 flex items-center justify-between">
+                    <span>🎯 อาชีพในอนาคต (Future Career)</span>
+                    <span className="text-[9px] bg-amber-100 dark:bg-amber-950 px-1.5 py-0.5 rounded text-amber-700 dark:text-amber-300">แสดงผลขนาดใหญ่</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="เช่น วิศวกร AI, แพทย์เฉพาะทาง, สถาปนิก, นักธุรกิจ ฯลฯ"
+                    value={formData.futureCareer || ''}
+                    onChange={(e) => setFormData({ ...formData, futureCareer: e.target.value })}
+                    className="w-full px-3 py-2 bg-amber-50/50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800 rounded-xl text-xs font-bold outline-none text-slate-900 dark:text-slate-100"
                   />
                 </div>
 

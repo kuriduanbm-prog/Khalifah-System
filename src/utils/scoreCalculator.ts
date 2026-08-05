@@ -78,44 +78,36 @@ export function calculateStudentTotalScore(
 }
 
 export function getScoreBadgeInfo(score: number): ScoreBadgeInfo {
-  if (score >= 90) {
+  if (score > 80) {
     return {
       level: 'Excellent',
-      labelThai: 'ดีเยี่ยม (Excellent)',
+      labelThai: 'ปกติ/ดีเยี่ยม (81-100 คะแนน)',
       colorClass: 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700',
       bgHex: '#10B981',
       textHex: '#FFFFFF',
     };
-  } else if (score >= 80) {
+  } else if (score >= 71) {
     return {
-      level: 'Very Good',
-      labelThai: 'ดีมาก (Very Good)',
-      colorClass: 'bg-teal-100 text-teal-800 border-teal-300 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-700',
-      bgHex: '#14B8A6',
-      textHex: '#FFFFFF',
-    };
-  } else if (score >= 70) {
-    return {
-      level: 'Good',
-      labelThai: 'ดี (Good)',
-      colorClass: 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-700',
-      bgHex: '#3B82F6',
-      textHex: '#FFFFFF',
-    };
-  } else if (score >= 60) {
-    return {
-      level: 'Need Improvement',
-      labelThai: 'ควรปรับปรุง (Need Improvement)',
-      colorClass: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700',
+      level: 'Warning',
+      labelThai: 'เตือน/ต้องปรับปรุง (71-80 คะแนน)',
+      colorClass: 'bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-700',
       bgHex: '#F59E0B',
+      textHex: '#FFFFFF',
+    };
+  } else if (score >= 50) {
+    return {
+      level: 'Critical',
+      labelThai: 'วิกฤต/เสี่ยงสัญญาทุน (50-70 คะแนน)',
+      colorClass: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-700',
+      bgHex: '#EF4444',
       textHex: '#FFFFFF',
     };
   } else {
     return {
-      level: 'Critical',
-      labelThai: 'วิกฤต (Critical)',
-      colorClass: 'bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-700',
-      bgHex: '#EF4444',
+      level: 'Extreme Critical',
+      labelThai: 'วิกฤตขั้นสูง (<50 คะแนน)',
+      colorClass: 'bg-rose-200 text-rose-950 border-rose-500 dark:bg-rose-900 dark:text-rose-100 dark:border-rose-600',
+      bgHex: '#991B1B',
       textHex: '#FFFFFF',
     };
   }

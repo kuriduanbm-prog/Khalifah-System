@@ -186,8 +186,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveTabRaw('login');
       return;
     }
-    if (isStudent && tab !== 'profile' && tab !== 'my_account' && tab !== 'login' && tab !== 'student_checkin') {
-      showSnackbar('นักเรียนสามารถเข้าถึงได้เฉพาะดูผลการเรียนและเมนูส่วนตัว (ฉัน) เท่านั้น', 'info');
+    if (isStudent && tab !== 'profile' && tab !== 'my_account' && tab !== 'login' && tab !== 'student_checkin' && tab !== 'schedule' && tab !== 'khalifah_info') {
+      showSnackbar('นักเรียนสามารถเข้าถึงได้เฉพาะเมนูสำหรับนักเรียนเท่านั้น', 'info');
       setActiveTabRaw('profile');
       return;
     }

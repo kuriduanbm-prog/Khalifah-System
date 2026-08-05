@@ -15,8 +15,11 @@ import {
   Camera,
   Moon,
   Sun,
-  Smartphone
+  Smartphone,
+  Briefcase,
+  Sparkles
 } from 'lucide-react';
+import { AnimatedCareerAvatar } from '../common/AnimatedCareerAvatar';
 
 export const MyAccountView: React.FC = () => {
   const {
@@ -30,6 +33,7 @@ export const MyAccountView: React.FC = () => {
     showSnackbar,
     darkMode,
     toggleDarkMode,
+    setActiveTab,
     orgSettings
   } = useApp();
 
@@ -47,6 +51,7 @@ export const MyAccountView: React.FC = () => {
   const [profileForm, setProfileForm] = useState({
     fullName: currentUser?.name || matchedStudent?.fullName || '',
     nickname: matchedStudent?.nickname || '',
+    futureCareer: matchedStudent?.futureCareer || '',
     year: matchedStudent?.year || 'ม.5',
     dorm: matchedStudent?.dorm || 'หอพักอัลฟุรกอน (หอพักใน)',
     phone: matchedStudent?.phone || '',
@@ -86,6 +91,7 @@ export const MyAccountView: React.FC = () => {
         ...matchedStudent,
         fullName: profileForm.fullName,
         nickname: profileForm.nickname || profileForm.fullName.split(' ')[0],
+        futureCareer: profileForm.futureCareer,
         year: profileForm.year,
         dorm: profileForm.dorm,
         phone: profileForm.phone,
@@ -176,15 +182,30 @@ export const MyAccountView: React.FC = () => {
             <p className="text-xs text-sky-200">
               {matchedStudent?.faculty || orgSettings.faculty} • {matchedStudent?.dorm || 'หอพักนักเรียน'}
             </p>
+
+            {/* Prominent Large Future Career Banner Badge with Cartoon Character */}
+            <div className="mt-2.5 p-3 bg-amber-400/20 backdrop-blur-md rounded-2xl border border-amber-300/40 flex items-center gap-3 shadow-sm">
+              <div className="shrink-0">
+                <AnimatedCareerAvatar career={profileForm.futureCareer} size="sm" showBadge={false} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] uppercase font-extrabold text-amber-200 block tracking-wider">🎯 อาชีพในอนาคต (Future Career)</span>
+                <span className="text-sm sm:text-base font-black text-white truncate block">
+                  {profileForm.futureCareer || 'ยังไม่ได้ระบุอาชีพในอนาคต'}
+                </span>
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-rose-500/80 hover:bg-rose-600 text-white font-bold text-xs rounded-2xl shadow-sm transition-all flex items-center gap-1.5 shrink-0"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>ออกจากระบบ</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={logout}
+              className="px-3.5 py-2 bg-rose-500/80 hover:bg-rose-600 text-white font-bold text-xs rounded-2xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>ออกจากระบบ</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -251,6 +272,33 @@ export const MyAccountView: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              {/* Highlighted Future Career Field with Animated Cartoon Preview */}
+              <div className="sm:col-span-2 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 p-4 rounded-2xl border border-amber-500/30 shadow-xs space-y-3">
+                <label className="block font-extrabold text-slate-800 dark:text-slate-100 flex items-center justify-between text-xs sm:text-sm">
+                  <span className="flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-amber-500" />
+                    <span>อาชีพในอนาคต (Future Career / เป้าหมายในชีวิต)</span>
+                  </span>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-400/20 px-2 py-0.5 rounded-full">
+                    การ์ตูนเคลื่อนไหวตามอาชีพ 🎨
+                  </span>
+                </label>
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="w-full sm:flex-1">
+                    <input
+                      type="text"
+                      value={profileForm.futureCareer}
+                      onChange={(e) => setProfileForm({ ...profileForm, futureCareer: e.target.value })}
+                      placeholder="เช่น แพทย์, วิศวกร, ครู/อาจารย์, พายัพ/โปรแกรมเมอร์, นักธุรกิจ, เชฟ ฯลฯ"
+                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-amber-400/50 dark:border-amber-500/50 rounded-xl text-xs sm:text-sm font-black outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100 shadow-inner"
+                    />
+                  </div>
+                  <div className="shrink-0 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm flex items-center gap-2">
+                    <AnimatedCareerAvatar career={profileForm.futureCareer} size="md" showBadge={false} />
+                  </div>
+                </div>
+              </div>
+
               <div className="sm:col-span-2">
                 <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
                   ชื่อ-นามสกุล *

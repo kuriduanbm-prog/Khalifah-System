@@ -9,9 +9,12 @@ import {
   ArrowLeft,
   CheckCircle2,
   Clock,
-  XCircle
+  XCircle,
+  Briefcase,
+  Sparkles
 } from 'lucide-react';
 import { calculateStudentTotalScore, getScoreBadgeInfo } from '../../utils/scoreCalculator';
+import { AnimatedCareerAvatar } from '../common/AnimatedCareerAvatar';
 
 export const StudentProfileView: React.FC = () => {
   const { students, selectedStudentId, records, scoreRules, orgSettings, setActiveTab, currentUser } = useApp();
@@ -49,6 +52,8 @@ export const StudentProfileView: React.FC = () => {
   let totalLatePrayer = 0;
   let totalAbsentPrayer = 0;
   let totalAbsentHalaqah = 0;
+  let totalLeaveCount = 0;
+  let totalLateClassCount = 0;
 
   studentRecords.forEach((r) => {
     Object.values(r.prayer).forEach((st) => {
@@ -59,6 +64,16 @@ export const StudentProfileView: React.FC = () => {
     Object.values(r.halaqah).forEach((st) => {
       if (st === 'Absent') totalAbsentHalaqah++;
     });
+    if (r.discipline?.attendanceStatus === 'Late' || r.discipline?.lateActivity) {
+      totalLateClassCount++;
+    }
+    if (
+      r.discipline?.attendanceStatus === 'Leave' ||
+      r.discipline?.leaveNote ||
+      (r.note && (r.note.includes('ลา') || r.note.includes('บ้าน')))
+    ) {
+      totalLeaveCount++;
+    }
   });
 
   return (
@@ -134,20 +149,110 @@ export const StudentProfileView: React.FC = () => {
             </div>
           </div>
 
-          <div className="text-center md:text-right p-4 bg-emerald-50 dark:bg-emerald-950/60 rounded-3xl border border-emerald-200 dark:border-emerald-800 shrink-0 w-full md:w-auto">
-            <span className="text-xs text-emerald-800 dark:text-emerald-300 font-bold block">คะแนนความประพฤติสะสม</span>
-            <span className="text-3xl font-black text-emerald-900 dark:text-emerald-200">{totalScore}</span>
-            <span className="text-xs text-emerald-700 dark:text-emerald-400 block mt-1">คะแนนเต็ม 100</span>
+          {/* Dynamic Conduct Score Box */}
+          <div
+            className={`text-center md:text-right p-4 rounded-3xl border shrink-0 w-full md:w-auto space-y-2 transition-all ${
+              totalScore > 80
+                ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800'
+                : totalScore >= 71
+                ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-800'
+                : totalScore >= 50
+                ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800'
+                : 'bg-red-100 dark:bg-red-950/90 border-red-400 dark:border-red-800'
+            }`}
+          >
+            <div>
+              <span
+                className={`text-xs font-bold block ${
+                  totalScore > 80
+                    ? 'text-emerald-800 dark:text-emerald-300'
+                    : totalScore >= 71
+                    ? 'text-amber-800 dark:text-amber-300'
+                    : totalScore >= 50
+                    ? 'text-rose-800 dark:text-rose-300'
+                    : 'text-red-900 dark:text-red-200'
+                }`}
+              >
+                คะแนนความประพฤติสะสม
+              </span>
+              <span
+                className={`text-3xl font-black ${
+                  totalScore > 80
+                    ? 'text-emerald-900 dark:text-emerald-100'
+                    : totalScore >= 71
+                    ? 'text-amber-900 dark:text-amber-100'
+                    : totalScore >= 50
+                    ? 'text-rose-900 dark:text-rose-100'
+                    : 'text-red-950 dark:text-red-100'
+                }`}
+              >
+                {totalScore}
+              </span>
+              <span
+                className={`text-xs block mt-1 ${
+                  totalScore > 80
+                    ? 'text-emerald-700 dark:text-emerald-400'
+                    : totalScore >= 71
+                    ? 'text-amber-700 dark:text-amber-400'
+                    : totalScore >= 50
+                    ? 'text-rose-700 dark:text-rose-400'
+                    : 'text-red-800 dark:text-red-300'
+                }`}
+              >
+                คะแนนเต็ม 100
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Prominent Large Display of Future Career (อาชีพในอนาคต) with Animated Cartoon Avatar */}
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 text-white rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden border border-emerald-400/30">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 z-10 relative">
+          <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left w-full">
+            {/* Animated Cartoon Avatar Matching Future Career */}
+            <div className="shrink-0 bg-white/10 backdrop-blur-md p-2.5 rounded-3xl border border-white/20 shadow-inner flex items-center justify-center">
+              <AnimatedCareerAvatar career={student.futureCareer} size="lg" showBadge={false} />
+            </div>
+
+            <div className="space-y-1 min-w-0 flex-1">
+              <div className="inline-flex items-center justify-center sm:justify-start gap-1.5 text-xs font-black text-amber-300 uppercase tracking-wide px-3 py-1 bg-black/20 backdrop-blur-md rounded-full border border-white/10">
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                <span>เป้าหมายอาชีพในอนาคต (Future Career Goal)</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white drop-shadow-md tracking-tight leading-tight">
+                {student.futureCareer || 'ยังไม่ได้ระบุอาชีพในอนาคต'}
+              </h2>
+              <p className="text-xs text-sky-100/90 leading-relaxed">
+                การ์ตูนเคลื่อนไหวสะท้อนอาชีพเป้าหมายเพื่อเป็นแรงบันดาลใจในการศึกษาและการทำความดีประจำวัน
+              </p>
+            </div>
+
+            {student.futureCareer ? (
+              <span className="px-4 py-2.5 bg-amber-400 text-amber-950 font-black text-xs sm:text-sm rounded-2xl shadow-md shrink-0 flex items-center gap-1.5 border border-amber-200 self-center">
+                <span>🎯 เป้าหมายหลักนักเรียน</span>
+              </span>
+            ) : (
+              <span className="text-xs text-amber-100/80 bg-white/10 px-3.5 py-2 rounded-xl border border-white/20 shrink-0 self-center">
+                สามารถแก้ไขได้ในเมนู "ส่วนตัว"
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm text-center group hover:border-emerald-300 dark:hover:border-emerald-700 transition-all">
+          <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1 group-hover:scale-110 transition-transform" />
+          <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">{totalPresentPrayer}</div>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">ละหมาดตรงเวลา (ครั้ง)</span>
+        </div>
+
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm text-center">
-          <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto mb-1" />
-          <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalPresentPrayer}</div>
-          <span className="text-[10px] text-slate-400">ละหมาดตรงเวลา (ครั้ง)</span>
+          <Clock className="w-6 h-6 text-amber-500 mx-auto mb-1" />
+          <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalLateClassCount}</div>
+          <span className="text-[10px] text-slate-400">เข้าเรียนสาย (ครั้ง)</span>
         </div>
 
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm text-center">
@@ -162,10 +267,10 @@ export const StudentProfileView: React.FC = () => {
           <span className="text-[10px] text-slate-400">ขาดละหมาด (ครั้ง)</span>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm text-center">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm text-center col-span-2 sm:col-span-1">
           <BookOpenCheck className="w-6 h-6 text-purple-500 mx-auto mb-1" />
-          <div className="text-xl font-black text-slate-900 dark:text-slate-100">{totalAbsentHalaqah}</div>
-          <span className="text-[10px] text-slate-400">นักเรียนอยู่บ้าน (ครั้ง)</span>
+          <div className="text-xl font-black text-slate-900 dark:text-slate-100">{Math.max(totalLeaveCount, totalAbsentHalaqah)}</div>
+          <span className="text-[10px] text-slate-400">ลาเรียน (ครั้ง)</span>
         </div>
       </div>
 

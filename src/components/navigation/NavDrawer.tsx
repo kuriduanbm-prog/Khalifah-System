@@ -11,11 +11,15 @@ import {
   Settings,
   Sparkles,
   User,
-  Camera
+  Camera,
+  CalendarDays,
+  BookOpen
 } from 'lucide-react';
 
 export const NAV_ITEMS = [
   { id: 'dashboard', label: 'แดชบอร์ด', icon: LayoutDashboard },
+  { id: 'schedule', label: 'ตารางเรียน', icon: CalendarDays },
+  { id: 'khalifah_info', label: 'ข่าวสาร/ความรู้ทั่วไป', icon: BookOpen },
   { id: 'students', label: 'จัดการนักเรียน', icon: Users },
   { id: 'prayer', label: 'บันทึกละหมาด', icon: CalendarCheck },
   { id: 'student_checkin', label: 'เช็คละหมาดด้วยตนเอง', icon: Camera },
@@ -32,7 +36,7 @@ export const NavDrawer: React.FC = () => {
 
   const filteredNavItems = NAV_ITEMS.filter((item) => {
     if (isStudent) {
-      return item.id === 'student_checkin' || item.id === 'profile' || item.id === 'my_account';
+      return item.id === 'schedule' || item.id === 'khalifah_info' || item.id === 'student_checkin' || item.id === 'profile' || item.id === 'my_account';
     }
     if (isTeacher) {
       return item.id !== 'settings' && item.id !== 'profile' && item.id !== 'student_checkin';
@@ -56,9 +60,11 @@ export const NavDrawer: React.FC = () => {
           </div>
         </div>
         {isStudent && (
-          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 bg-white/60 dark:bg-slate-900/60 p-2 rounded-xl">
-            🔒 สำหรับนักเรียน: ดูผลการเรียนและจัดการรหัสผ่านส่วนตัว
-          </p>
+          <div className="mt-2.5">
+            <p className="text-[10px] text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-900/70 p-2 rounded-xl leading-relaxed border border-sky-100 dark:border-sky-900">
+              🔒 สำหรับนักเรียน: ดูผลการเรียน, ตารางเรียน, ข่าวสารกิจกรรม และจัดการรหัสผ่านส่วนตัว
+            </p>
+          </div>
         )}
       </div>
 
@@ -67,7 +73,6 @@ export const NavDrawer: React.FC = () => {
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
-
           return (
             <button
               key={item.id}

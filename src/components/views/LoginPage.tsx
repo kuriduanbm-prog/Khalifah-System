@@ -50,6 +50,7 @@ export const LoginPage: React.FC = () => {
   const [regForm, setRegForm] = useState({
     fullName: '',
     nickname: '',
+    futureCareer: '',
     year: 'ม.5',
     dorm: 'หอพักอัลฟุรกอน (หอพักใน)',
     phone: '',
@@ -122,6 +123,7 @@ export const LoginPage: React.FC = () => {
       id: cleanCode,
       fullName: regForm.fullName,
       nickname: regForm.nickname || regForm.fullName.split(' ')[0],
+      futureCareer: regForm.futureCareer,
       faculty: orgSettings.faculty,
       programme: 'อิสลามศึกษาและวิทยาการเรียนรู้',
       year: regForm.year,
@@ -432,6 +434,20 @@ export const LoginPage: React.FC = () => {
                         value={regForm.nickname}
                         onChange={(e) => setRegForm({ ...regForm, nickname: e.target.value })}
                         className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none"
+                      />
+                    </div>
+
+                    <div className="col-span-1 sm:col-span-2">
+                      <label className="block font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center justify-between text-xs">
+                        <span>🎯 อาชีพในอนาคต (Future Career)</span>
+                        <span className="text-[10px] bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full">แสดงเด่นในโปรไฟล์</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="เช่น วิศวกร AI, แพทย์เฉพาะทาง, สถาปนิก, นักธุรกิจ ฯลฯ"
+                        value={regForm.futureCareer}
+                        onChange={(e) => setRegForm({ ...regForm, futureCareer: e.target.value })}
+                        className="w-full px-3 py-2 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl outline-none font-bold text-slate-900 dark:text-slate-100"
                       />
                     </div>
 

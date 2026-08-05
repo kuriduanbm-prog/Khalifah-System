@@ -17,6 +17,8 @@ import { SettingsView } from './components/views/SettingsView';
 import { LoginPage } from './components/views/LoginPage';
 import { MyAccountView } from './components/views/MyAccountView';
 import { StudentPrayerCheckinView } from './components/views/StudentPrayerCheckinView';
+import { ScheduleView } from './components/views/ScheduleView';
+import { KhalifahInfoView } from './components/views/KhalifahInfoView';
 
 function MainContent() {
   const { activeTab, isStudent } = useApp();
@@ -27,6 +29,10 @@ function MainContent() {
         return <LoginPage />;
       case 'dashboard':
         return isStudent ? <StudentProfileView /> : <DashboardView />;
+      case 'schedule':
+        return <ScheduleView />;
+      case 'khalifah_info':
+        return <KhalifahInfoView />;
       case 'students':
         return <StudentManagementView />;
       case 'prayer':

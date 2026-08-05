@@ -628,7 +628,7 @@ export const DisciplineRecordingView: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
               { key: 'prayerComplete', label: 'เข้าละหมาดครบ 5 เวลาตรงเวลา', pts: scoreRules.prayerCompleteBonus },
-              { key: 'completeHalaqah', label: 'เข้าร่วมหะละเกาะฮ์ครบทุกรอบ', pts: scoreRules.completeHalaqahBonus },
+              { key: 'completeHalaqah', label: 'มีความรู้และเข้าใจเนื้อหา', pts: scoreRules.completeHalaqahBonus },
               { key: 'volunteer', label: 'ทำจิตอาสา/ช่วยงานหอพัก', pts: scoreRules.volunteerBonus },
               { key: 'quranMemorisation', label: 'ท่องจำอัลกุรอานเพิ่มขึ้น', pts: scoreRules.quranBonus },
             ].map((item) => {

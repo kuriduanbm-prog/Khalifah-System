@@ -16,6 +16,9 @@ import {
   Sparkles,
   ChevronRight,
   Camera,
+  MessageSquare,
+  CalendarDays,
+  BookOpen
 } from 'lucide-react';
 
 export const BottomNav: React.FC = () => {
@@ -31,17 +34,19 @@ export const BottomNav: React.FC = () => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const studentNavs = [
-    { id: 'profile', label: 'ดูผลการเรียน', icon: GraduationCap },
+    { id: 'schedule', label: 'ตารางเรียน', icon: CalendarDays },
+    { id: 'khalifah_info', label: 'ข่าวสาร/ความรู้ทั่วไป', icon: BookOpen },
     { id: 'student_checkin', label: 'เช็คละหมาด', icon: Camera, isProminent: true },
+    { id: 'profile', label: 'ผลการเรียน', icon: GraduationCap },
     { id: 'my_account', label: 'ฉัน', icon: User },
   ];
 
   const staffNavs = [
     { id: 'dashboard', label: 'แดชบอร์ด', icon: LayoutDashboard },
-    { id: 'discipline', label: 'วินัย/พฤติกรรม', icon: ShieldAlert },
+    { id: 'schedule', label: 'ตารางเรียน', icon: CalendarDays },
+    { id: 'discipline', label: 'วินัย', icon: ShieldAlert },
     { id: 'prayer', label: 'ละหมาด', icon: CalendarCheck },
     { id: 'halaqah', label: 'หะละเกาะฮ์', icon: BookOpenCheck },
-    { id: 'reports', label: 'รายงาน', icon: FileBarChart },
     { id: 'more', label: 'เพิ่มเติม', icon: Menu },
   ];
 
@@ -56,7 +61,7 @@ export const BottomNav: React.FC = () => {
     }
   };
 
-  const isMoreTabActive = ['students', 'settings', 'my_account'].includes(activeTab);
+  const isMoreTabActive = ['students', 'settings', 'my_account', 'reports'].includes(activeTab);
 
   return (
     <>
@@ -164,7 +169,33 @@ export const BottomNav: React.FC = () => {
                 การจัดการหลัก
               </span>
 
-              {/* 1. จัดการนักเรียน */}
+              {/* 1. ความรู้ทั่วไปโปรแกรมคอลีฟะฮ์ */}
+              <button
+                onClick={() => {
+                  setActiveTab('khalifah_info');
+                  setIsMoreMenuOpen(false);
+                }}
+                className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 ${
+                  activeTab === 'khalifah_info'
+                    ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-300 dark:border-sky-800 text-sky-900 dark:text-sky-100 ring-2 ring-sky-500/30'
+                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-sm">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold">ความรู้ทั่วไป/ข่าวสารต่างๆ</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      ประกาศระบบ คู่มือการใช้งาน และความรู้ศาสนธรรม
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+              </button>
+
+              {/* 2. จัดการนักเรียน */}
               <button
                 onClick={() => {
                   setActiveTab('students');
@@ -264,6 +295,32 @@ export const BottomNav: React.FC = () => {
                     <div className="text-sm font-bold">ดูผลการเรียนรายบุคคล</div>
                     <div className="text-xs text-slate-500 dark:text-slate-400">
                       ตรวจสอบรายงานความประพฤติรายนักเรียน
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-slate-400 shrink-0" />
+              </button>
+
+              {/* 5. รายงานและสถิติ */}
+              <button
+                onClick={() => {
+                  setActiveTab('reports');
+                  setIsMoreMenuOpen(false);
+                }}
+                className={`w-full p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between gap-3 ${
+                  activeTab === 'reports'
+                    ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-300 dark:border-indigo-800 text-indigo-900 dark:text-indigo-100 ring-2 ring-indigo-500/30'
+                    : 'bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-600 text-white rounded-xl shadow-sm">
+                    <FileBarChart className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold">รายงานและสถิติ</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400">
+                      ดูภาพรวมสถิติการละหมาด หะละเกาะฮ์ และวินัย
                     </div>
                   </div>
                 </div>

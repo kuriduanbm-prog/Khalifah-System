@@ -94,10 +94,11 @@ export const HalaqahRecordingView: React.FC = () => {
   const currentStudent = students.find((s) => s.id === selectedStudentId);
 
   const handleHalaqahChange = (sessionKey: keyof HalaqahRecord, status: HalaqahStatus) => {
-    setHalaqahState((prev) => ({
-      ...prev,
-      [sessionKey]: status,
-    }));
+    setHalaqahState({
+      subuh: status,
+      asr: status === 'Absent' ? 'Present' : status,
+      isha: status === 'Absent' ? 'Present' : status,
+    });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -126,9 +127,7 @@ export const HalaqahRecordingView: React.FC = () => {
   };
 
   const sessionsList: { key: keyof HalaqahRecord; label: string; timeThai: string }[] = [
-    { key: 'subuh', label: 'Subuh', timeThai: 'หะละเกาะฮ์ซุบฮิ (รอบเช้า)' },
-    { key: 'asr', label: 'Asr', timeThai: 'หะละเกาะฮ์อัศรี (รอบเย็น)' },
-    { key: 'isha', label: 'Isha', timeThai: 'หะละเกาะฮ์อิชาอ์ (รอบค่ำ)' },
+    { key: 'subuh', label: 'ประจำวัน', timeThai: 'หะละเกาะฮ์วันนี้' },
   ];
 
   return (
@@ -139,7 +138,7 @@ export const HalaqahRecordingView: React.FC = () => {
           <span>บันทึกการเข้าร่วมหะละเกาะฮ์อัลกุรอาน/การเรียนรู้</span>
         </h2>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          เช็กชื่อการเข้าร่วมกิจกรรมอัลกุรอานประจำวัน (3 รอบ)
+          เช็กชื่อการเข้าร่วมกิจกรรมอัลกุรอานประจำวัน (1 รอบ: หะละเกาะฮ์วันนี้)
         </p>
       </div>
 

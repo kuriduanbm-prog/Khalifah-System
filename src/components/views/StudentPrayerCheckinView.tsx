@@ -158,7 +158,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
     : `นอกเขตมัสยิดอัลฮารอมัยน์ (ห่าง ${Math.round(distanceToMosque)} เมตร)`;
 
   // Fetch real GPS position
-  const fetchGpsCoordinates = () => {
+  const fetchGpsCoordinates = (autoStartCam = false) => {
     if ('geolocation' in navigator) {
       setIsFetchingGps(true);
       navigator.geolocation.getCurrentPosition(
@@ -170,45 +170,36 @@ export const StudentPrayerCheckinView: React.FC = () => {
             isRealGps: true,
           });
           setIsFetchingGps(false);
-          showSnackbar('อัปเดตพิกัด GPS เรียบร้อยแล้ว', 'info');
+          setIsGpsConfirmed(true);
+          showSnackbar('📍 ระบุและยืนยันพิกัด GPS ตำแหน่งปัจจุบันล่าสุดสำเร็จแล้ว', 'success');
+          if (autoStartCam && !isCameraActive && !capturedPhoto) {
+            startCamera();
+          }
         },
         (err) => {
           console.warn('Geolocation access error:', err);
-          setUserCoords({
-            lat: MOSQUE_TARGET_LAT,
-            lng: MOSQUE_TARGET_LNG,
-            accuracy: 5,
-            isRealGps: false,
-            error: 'ใช้ตำแหน่งจำลองมัสยิดอัลฮารอมัยน์',
-          });
           setIsFetchingGps(false);
+          setIsGpsConfirmed(false);
+          showSnackbar('❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาเปิดสิทธิ์เข้าถึงตำแหน่งในเบราว์เซอร์แล้วลองอีกครั้ง', 'error');
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
-      setUserCoords({
-        lat: MOSQUE_TARGET_LAT,
-        lng: MOSQUE_TARGET_LNG,
-        accuracy: 5,
-        isRealGps: false,
-        error: 'เบราว์เซอร์ไม่รองรับ GPS',
-      });
+      setIsFetchingGps(false);
+      setIsGpsConfirmed(false);
+      showSnackbar('❌ อุปกรณ์หรือเบราว์เซอร์ไม่รองรับ GPS', 'error');
     }
   };
 
+  const [isGpsConfirmed, setIsGpsConfirmed] = useState<boolean>(false);
+
   useEffect(() => {
-    fetchGpsCoordinates();
+    // Attempt location fetch on mount
+    fetchGpsCoordinates(false);
   }, []);
 
-  // Simulation mode helper for testing 15m radius
-  const setMosquePresetGps = () => {
-    setUserCoords({
-      lat: MOSQUE_TARGET_LAT,
-      lng: MOSQUE_TARGET_LNG,
-      accuracy: 3,
-      isRealGps: true,
-    });
-    showSnackbar('ตั้งค่าพิกัดจำลอง: มัสยิดอัลฮารอมัยน์ (อยู่ในเขตรัศมี 15ม.)', 'success');
+  const confirmGpsAndStartCamera = () => {
+    fetchGpsCoordinates(true);
   };
 
   // Camera states
@@ -232,6 +223,27 @@ export const StudentPrayerCheckinView: React.FC = () => {
     }
     setIsCameraActive(false);
   };
+
+  // Ensure video element receives stream and plays reliably whenever camera becomes active or videoRef mounts
+  useEffect(() => {
+    if (isCameraActive && streamRef.current) {
+      const attachStream = () => {
+        if (videoRef.current && streamRef.current) {
+          if (videoRef.current.srcObject !== streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+          }
+          videoRef.current.play().catch((e) => {
+            console.warn('Video auto-play failed, retrying on interaction:', e);
+          });
+        }
+      };
+
+      // Try immediately and also after brief micro-delay to handle React DOM mounting
+      attachStream();
+      const raf = requestAnimationFrame(attachStream);
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [isCameraActive]);
 
   // Start live camera stream
   const startCamera = async (mode = facingMode) => {
@@ -259,8 +271,8 @@ export const StudentPrayerCheckinView: React.FC = () => {
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: mode,
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
           },
           audio: false,
         });
@@ -297,13 +309,16 @@ export const StudentPrayerCheckinView: React.FC = () => {
       }
 
       streamRef.current = stream;
+      setIsCameraActive(true);
+
+      // Directly assign srcObject if video element is already in DOM
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        videoRef.current.play().catch((err) => console.warn('Direct play error:', err));
       }
-      setIsCameraActive(true);
     } catch (err: any) {
-      console.error('Camera access error:', err);
-      let errorMsg = 'ไม่พบอุปกรณ์กล้อง หรือกล้องถูกใช้งานโดยแอปพลิเคชันอื่น';
+      console.warn('Camera access unavailable:', err);
+      let errorMsg = 'ไม่พบอุปกรณ์กล้อง หรือกล้องถูกใช้งานโดยแอปอื่น';
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         errorMsg = 'ถูกปฏิเสธการเข้าถึงกล้อง กรุณาอนุญาตสิทธิ์ในเบราว์เซอร์';
       } else if (
@@ -311,7 +326,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
         err.name === 'DevicesNotFoundError' ||
         err.message?.includes('Requested device not found')
       ) {
-        errorMsg = 'ไม่พบกล้องเว็บแคมในระบบ สามารถกดปุ่ม "ถ่ายด้วยกล้องหลักอุปกรณ์" ด้านล่างได้';
+        errorMsg = 'ไม่พบกล้องเว็บแคมในระบบ สามารถใช้ปุ่มเลือกไฟล์/กล้องอุปกรณ์ หรือกดปุ่มถ่ายภาพจำลองได้';
       }
       setCameraError(errorMsg);
       setIsCameraActive(false);
@@ -512,6 +527,65 @@ export const StudentPrayerCheckinView: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  // Generate test photo stamp when webcam hardware is unavailable
+  const handleGenerateTestPhoto = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const grad = ctx.createLinearGradient(0, 0, 1280, 720);
+    grad.addColorStop(0, '#0f172a');
+    grad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1280, 720);
+
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+    ctx.beginPath();
+    ctx.arc(640, 300, 160, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 42px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🕌 ภาพถ่ายยืนยันตัวตนละหมาดสด (ระบบจำลอง)', 640, 280);
+
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(`นักเรียน: ${student?.fullName || 'นักเรียน'} [${student?.id || ''}]`, 640, 330);
+
+    const now = new Date();
+    const prayerName = PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label || selectedPrayer;
+
+    drawWatermarkOnCanvas(
+      canvas,
+      ctx,
+      student?.fullName || 'นักเรียน',
+      student?.id || '',
+      prayerName,
+      locationName,
+      now,
+      userCoords,
+      isInsideMosque
+    );
+
+    const dateFormatted = now.toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const timestampFull = `${dateFormatted} เวลา ${hours}:${minutes}:${seconds} น.`;
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
+    setCapturedPhoto(dataUrl);
+    setCapturedTimestamp(timestampFull);
+    showSnackbar('สร้างภาพถ่ายประทับตราวัน เวลา และพิกัด GPS เรียบร้อยแล้ว', 'success');
+  };
+
   const handleRetake = () => {
     setCapturedPhoto(null);
     setCapturedTimestamp(null);
@@ -600,6 +674,118 @@ export const StudentPrayerCheckinView: React.FC = () => {
     );
   };
 
+  // ⚡ Instant 1-Tap Snapshot & Save for Rush Mode
+  const handleInstantQuickCheckin = async () => {
+    if (!videoRef.current) {
+      showSnackbar('กล้องยังไม่พร้อมเปิดถ่ายภาพ', 'warning');
+      return;
+    }
+    const video = videoRef.current;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const now = new Date();
+    const prayerName = PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label || '';
+
+    drawWatermarkOnCanvas(
+      canvas,
+      ctx,
+      student?.fullName || 'นักเรียน',
+      student?.id || '',
+      prayerName,
+      locationName,
+      now,
+      userCoords,
+      isInsideMosque
+    );
+
+    const dateFormatted = now.toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    const timestampFull = `${dateFormatted} เวลา ${hours}:${minutes}:${seconds} น.`;
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+    stopCamera();
+    setIsSubmitting(true);
+
+    const existingRecord = records.find(
+      (r) => r.studentId === student?.id && r.date === todayStr
+    );
+
+    const updatedPrayer = existingRecord
+      ? { ...existingRecord.prayer, [selectedPrayer]: 'Present' as PrayerStatus }
+      : {
+          subuh: selectedPrayer === 'subuh' ? 'Present' : 'Absent',
+          zuhr: selectedPrayer === 'zuhr' ? 'Present' : 'Absent',
+          asr: selectedPrayer === 'asr' ? 'Present' : 'Absent',
+          maghrib: selectedPrayer === 'maghrib' ? 'Present' : 'Absent',
+          isha: selectedPrayer === 'isha' ? 'Present' : 'Absent',
+        };
+
+    const newRecord: DailyRecord = {
+      id: existingRecord ? existingRecord.id : `${todayStr}_${student?.id || '0'}`,
+      date: todayStr,
+      studentId: student?.id || '',
+      studentName: student?.fullName || 'นักเรียน',
+      prayer: updatedPrayer,
+      halaqah: existingRecord?.halaqah || { subuh: 'Absent', asr: 'Absent', isha: 'Absent' },
+      discipline: existingRecord?.discipline || {
+        lateActivity: false,
+        dress: false,
+        phone: false,
+        cleaning: false,
+      },
+      bonus: existingRecord?.bonus,
+      note: `เช็คละหมาดสดด่วนเมื่อ ${timestampFull} ณ ${locationName}`,
+      recorder: `${student?.fullName || 'นักเรียน'} (เช็คด่วน 1-Tap)`,
+      timestamp: new Date().toISOString(),
+    };
+
+    await addOrUpdateRecord(newRecord);
+
+    const newDetail: PrayerCheckinDetail = {
+      prayerKey: selectedPrayer,
+      photoUrl: dataUrl,
+      timestampStr: timestampFull,
+      lat: userCoords.lat,
+      lng: userCoords.lng,
+      locationName,
+      isInsideMosque,
+      distanceToMosque: Math.round(distanceToMosque),
+    };
+
+    const storageKey = `khalifah_prayer_details_${student?.id || '0'}_${todayStr}`;
+    const updatedMap = { ...prayerDetailsMap, [selectedPrayer]: newDetail };
+    setPrayerDetailsMap(updatedMap);
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(updatedMap));
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
+
+    setIsSubmitting(false);
+    setCapturedPhoto(null);
+    setCapturedTimestamp(null);
+
+    showSnackbar(
+      `⚡ เช็คละหมาด ${PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label} สำเร็จเรียบร้อยใน 1 คลิก!`,
+      'success'
+    );
+  };
+
   const todayRecord = records.find((r) => r.studentId === student?.id && r.date === todayStr);
 
   return (
@@ -638,285 +824,305 @@ export const StudentPrayerCheckinView: React.FC = () => {
         </div>
       </div>
 
-      {/* Geofence & GPS Info Bar */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Unified Prayer Check-in & Live Camera Module */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-md space-y-4">
+        {/* Card Header: Title + Location & GPS Status */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            <div
-              className={`p-3 rounded-2xl ${
-                isInsideMosque
-                  ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400'
-              }`}
-            >
-              <Compass className="w-6 h-6 animate-spin-slow" />
+            <div className="p-2.5 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 shrink-0">
+              <Camera className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  ตำแหน่งปัจจุบันของฉัน
-                </span>
-                {isInsideMosque ? (
-                  <span className="px-2 py-0.5 bg-emerald-500 text-white text-[10px] font-extrabold rounded-full flex items-center gap-1 shadow-xs">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>อยู่ในเขตรัศมี 15ม.</span>
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 bg-amber-500 text-white text-[10px] font-extrabold rounded-full flex items-center gap-1 shadow-xs">
-                    <Navigation className="w-3 h-3" />
-                    <span>อยู่นอกเขตรัศมี (ห่าง {Math.round(distanceToMosque)}ม.)</span>
-                  </span>
-                )}
-              </div>
-              <div className="text-sm font-extrabold text-slate-900 dark:text-slate-100 mt-0.5 flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{locationName}</span>
-              </div>
-              <div className="text-xs font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                พิกัด: Lat {userCoords.lat.toFixed(6)}°, Lon {userCoords.lng.toFixed(6)}°
-              </div>
+              <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <span>เช็คอินละหมาดด้วยกล้องสด & พิกัด GPS</span>
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                กดอัปเดตพิกัดเพื่อเปิดกล้อง เลือกรอบละหมาด แล้วถ่ายภาพบันทึกได้ทันที
+              </p>
             </div>
           </div>
 
+          {/* Location & GPS Status pill */}
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={setMosquePresetGps}
-              className="px-3 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
-              title="จำลองพิกัดมัสยิดอัลฮารอมัยน์"
-            >
-              <Crosshair className="w-3.5 h-3.5 text-emerald-600" />
-              <span>จำลองพิกัดมัสยิด (15ม.)</span>
-            </button>
+            <div className="text-xs font-mono text-slate-600 dark:text-slate-300 flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="font-semibold">{locationName}</span>
+              {isGpsConfirmed && (
+                <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-mono ml-1">
+                  {userCoords.lat.toFixed(4)}°, {userCoords.lng.toFixed(4)}°
+                </span>
+              )}
+            </div>
 
-            <button
-              type="button"
-              onClick={fetchGpsCoordinates}
-              disabled={isFetchingGps}
-              className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1 transition-colors"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isFetchingGps ? 'animate-spin text-emerald-500' : ''}`} />
-              <span>ดึง GPS สด</span>
-            </button>
+            {isGpsConfirmed && (
+              <button
+                type="button"
+                onClick={confirmGpsAndStartCamera}
+                disabled={isFetchingGps}
+                className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                title="อัปเดตพิกัดตำแหน่งใหม่"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isFetchingGps ? 'animate-spin text-emerald-500' : ''}`} />
+                <span className="hidden sm:inline">อัปเดตพิกัด</span>
+              </button>
+            )}
           </div>
         </div>
-      </div>
 
-      {/* Step 1: Select Prayer Round (Compact & Easy-to-click) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 shadow-sm space-y-2.5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-emerald-800 text-white text-[10px] flex items-center justify-center font-bold">1</span>
-            <span>เลือกเวลาละหมาดที่ต้องการเช็ค</span>
-          </h2>
-          <span className="text-[11px] text-slate-400 font-medium">กดปุ่มเวลาเพื่อเปลี่ยน</span>
-        </div>
-
-        {/* Compact Prayer Segmented Bar */}
-        <div className="grid grid-cols-5 gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl">
-          {PRAYER_OPTIONS.map((p) => {
-            const isSelected = selectedPrayer === p.key;
-            const isCompletedToday = todayRecord?.prayer[p.key] === 'Present';
-
-            return (
-              <button
-                key={p.key}
-                type="button"
-                onClick={() => setSelectedPrayer(p.key)}
-                className={`py-2 px-1 rounded-xl transition-all flex flex-col items-center justify-center text-center relative ${
-                  isSelected
-                    ? 'bg-emerald-600 text-white font-extrabold shadow-md scale-[1.02] ring-2 ring-emerald-400/50'
-                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/60'
-                }`}
-              >
-                {isCompletedToday && (
-                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-white" />
-                )}
-                <span className="text-base mb-0.5">{p.icon}</span>
-                <span className="text-xs font-bold leading-tight">{p.label}</span>
-                <span
-                  className={`text-[9px] font-mono mt-0.5 hidden sm:inline ${
-                    isSelected ? 'text-emerald-100' : 'text-slate-400'
-                  }`}
-                >
-                  {p.timeRange.split(' ')[0]}
+        {/* Action area: If GPS is not yet confirmed, show the primary activation banner */}
+        {!isGpsConfirmed ? (
+          <div className="p-8 sm:p-12 text-center rounded-3xl bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-emerald-400/60 dark:border-emerald-700/60 space-y-4">
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-md">
+              <Compass className={`w-8 h-8 ${isFetchingGps ? 'animate-spin' : ''}`} />
+            </div>
+            <div className="max-w-md mx-auto space-y-1">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                📍 กดระบุพิกัดตำแหน่งปัจจุบันล่าสุดเพื่อเปิดกล้อง
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                ต้องระบุและยืนยันพิกัด GPS ตำแหน่งปัจจุบันล่าสุดก่อนเปิดกล้องและเลือกรอบละหมาด
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={confirmGpsAndStartCamera}
+              disabled={isFetchingGps}
+              className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl active:scale-95 transition-all ring-2 ring-emerald-400/60 cursor-pointer inline-flex items-center gap-2"
+            >
+              <Compass className={`w-5 h-5 ${isFetchingGps ? 'animate-spin text-amber-300' : 'text-amber-300'}`} />
+              <span>{isFetchingGps ? 'กำลังระบุพิกัด GPS...' : '📍 กดอัปเดตพิกัดตำแหน่งล่าสุด & เปิดกล้องทันที'}</span>
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Integrated Prayer Selection Tabs Embedded Right Above Camera */}
+            <div className="p-3 bg-slate-100 dark:bg-slate-800/90 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>เลือกรอบละหมาด:</span>
                 </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Step 2: Large Camera Viewport & Verification */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-md space-y-5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <span className="w-7 h-7 rounded-full bg-emerald-800 text-white text-xs flex items-center justify-center font-bold">2</span>
-            <span>ถ่ายรูปสดด้วยกล้อง HD ยืนยันตัวตน</span>
-          </h2>
-          <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800 flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4" />
-            <span>ถ่ายรูป + เวลา + GPS</span>
-          </span>
-        </div>
-
-        {/* Large Camera Viewport Container */}
-        <div className="w-full min-h-[420px] sm:min-h-[520px] lg:min-h-[580px] rounded-3xl overflow-hidden bg-slate-950 border-2 border-slate-800 dark:border-slate-700 shadow-2xl relative flex items-center justify-center">
-          {/* Case A: Camera is active */}
-          {isCameraActive && !capturedPhoto && (
-            <div className="relative w-full h-full min-h-[420px] sm:min-h-[520px] lg:min-h-[580px] flex flex-col justify-between">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full min-h-[420px] sm:min-h-[520px] lg:min-h-[580px] object-cover"
-              />
-
-              {/* Real-time Camera Overlay Badges */}
-              <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
-                <div className="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3.5 py-1.5 rounded-xl text-xs text-amber-300 font-mono font-bold flex items-center gap-2 shadow-lg">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
-                  <span>
-                    เวลาสด: {String(currentTime.getHours()).padStart(2, '0')}:
-                    {String(currentTime.getMinutes()).padStart(2, '0')}:
-                    {String(currentTime.getSeconds()).padStart(2, '0')} น.
-                  </span>
-                </div>
-
-                <div className="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs text-sky-300 font-mono font-bold flex items-center gap-1.5 shadow-lg">
-                  <Navigation className="w-3.5 h-3.5 text-sky-400 animate-bounce" />
-                  <span>
-                    GPS: {userCoords.lat.toFixed(4)}°, {userCoords.lng.toFixed(4)}°
-                  </span>
-                </div>
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-800">
+                  รอบปัจจุบัน: <strong>{PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label}</strong>
+                </span>
               </div>
 
-              {/* Bottom Camera Action Bar */}
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between p-3 bg-slate-900/85 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl z-10">
-                <button
-                  type="button"
-                  onClick={toggleCameraFacing}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-2 transition-colors"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span className="hidden sm:inline">สลับกล้อง ({facingMode === 'user' ? 'หน้า' : 'หลัง'})</span>
-                </button>
+              <div className="grid grid-cols-5 gap-1.5">
+                {PRAYER_OPTIONS.map((p) => {
+                  const isSelected = selectedPrayer === p.key;
+                  const isCompletedToday = todayRecord?.prayer[p.key] === 'Present';
 
-                <button
-                  type="button"
-                  onClick={captureSnapshot}
-                  className="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-xl flex items-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40"
-                >
-                  <Camera className="w-5 h-5" />
-                  <span>ถ่ายรูปยืนยันตัวตน</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={stopCamera}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
-                >
-                  ปิดกล้อง
-                </button>
+                  return (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => setSelectedPrayer(p.key)}
+                      className={`py-2 px-1 rounded-xl transition-all flex flex-col items-center justify-center text-center relative cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white font-extrabold shadow-md scale-[1.02] ring-2 ring-emerald-400'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      {isCompletedToday && (
+                        <span className="absolute top-1 right-1 px-1 py-0.5 bg-amber-400 text-slate-900 text-[9px] font-black rounded-full shadow-xs flex items-center gap-0.5">
+                          <Check className="w-2.5 h-2.5" />
+                        </span>
+                      )}
+                      <span className="text-base mb-0.5">{p.icon}</span>
+                      <span className="text-xs font-extrabold leading-tight">{p.label}</span>
+                      <span
+                        className={`text-[9px] font-mono mt-0.5 hidden sm:inline ${
+                          isSelected ? 'text-emerald-100 font-semibold' : 'text-slate-400'
+                        }`}
+                      >
+                        {p.timeRange.split(' ')[0]}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          )}
 
-          {/* Case B: Photo already captured with Watermark */}
-          {capturedPhoto && (
-            <div className="relative w-full h-full min-h-[420px] sm:min-h-[520px] lg:min-h-[580px] flex items-center justify-center bg-black">
-              <img
-                src={capturedPhoto}
-                alt="Captured Prayer Stamp"
-                className="w-full max-h-[620px] object-contain rounded-2xl shadow-2xl"
-              />
-              <div className="absolute top-4 right-4">
-                <button
-                  type="button"
-                  onClick={handleRetake}
-                  className="px-4 py-2 bg-slate-900/90 text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl hover:bg-slate-800 transition-colors"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>ถ่ายใหม่</span>
-                </button>
-              </div>
-            </div>
-          )}
+            {/* Viewfinder Container */}
+            <div className="w-full min-h-[380px] sm:min-h-[480px] lg:min-h-[520px] rounded-3xl overflow-hidden bg-slate-950 border-2 border-slate-800 dark:border-slate-700 shadow-2xl relative flex items-center justify-center">
+              {/* Case A: Camera is active */}
+              {isCameraActive && !capturedPhoto && (
+                <div className="relative w-full h-full min-h-[380px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col justify-between">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    onLoadedMetadata={() => {
+                      videoRef.current?.play().catch((err) => console.warn('Video playback on metadata load:', err));
+                    }}
+                    className="w-full h-full min-h-[380px] sm:min-h-[480px] lg:min-h-[520px] object-cover"
+                  />
 
-          {/* Case C: Camera stopped / not opened yet */}
-          {!isCameraActive && !capturedPhoto && (
-            <div className="p-8 text-center space-y-4 my-auto">
-              <div className="w-20 h-20 rounded-3xl bg-emerald-900/50 text-emerald-400 border border-emerald-700/60 flex items-center justify-center mx-auto shadow-2xl">
-                <Camera className="w-10 h-10" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white">กล้องถ่ายรูปเช็คละหมาด (ขยายกล้องใหญ่)</h3>
-                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
-                  กดปุ่มเพื่อถ่ายรูป หน้าต่างกล้องจะขยายใหญ่ ประทับวัน เวลา (วินาที)
-                  และพิกัด GPS มัสยิดอัตโนมัติ
-                </p>
-              </div>
+                  {/* Real-time Camera Overlay Badges */}
+                  <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-2 pointer-events-none z-10">
+                    <div className="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3.5 py-1.5 rounded-xl text-xs text-amber-300 font-mono font-bold flex items-center gap-2 shadow-lg">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+                      <span>
+                        เวลาสด: {String(currentTime.getHours()).padStart(2, '0')}:
+                        {String(currentTime.getMinutes()).padStart(2, '0')}:
+                        {String(currentTime.getSeconds()).padStart(2, '0')} น.
+                      </span>
+                    </div>
 
-              {cameraError && (
-                <div className="p-3.5 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs rounded-2xl flex items-center gap-2.5 max-w-md mx-auto text-left">
-                  <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
-                  <span>{cameraError}</span>
+                    <div className="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs text-sky-300 font-mono font-bold flex items-center gap-1.5 shadow-lg">
+                      <Navigation className="w-3.5 h-3.5 text-sky-400 animate-bounce" />
+                      <span>
+                        GPS: {userCoords.lat.toFixed(4)}°, {userCoords.lng.toFixed(4)}°
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Bottom Camera Speed Action Bar */}
+                  <div className="absolute bottom-4 left-4 right-4 flex flex-col sm:flex-row items-center justify-between gap-2 p-3 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl z-10">
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between">
+                      <button
+                        type="button"
+                        onClick={toggleCameraFacing}
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="w-4 h-4 text-emerald-400" />
+                        <span>สลับกล้อง ({facingMode === 'user' ? 'หน้า' : 'หลัง'})</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={stopCamera}
+                        className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                      >
+                        ปิดกล้อง
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={captureSnapshot}
+                        className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Camera className="w-4 h-4 text-amber-400" />
+                        <span>ถ่ายดูก่อน</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleInstantQuickCheckin}
+                        className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40 cursor-pointer"
+                      >
+                        <Sparkles className="w-4 h-4 text-amber-300 animate-spin-slow" />
+                        <span>⚡ ถ่ายและบันทึก{PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label}ทันที (1-Click)</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
+              {/* Case B: Photo already captured with Watermark */}
+              {capturedPhoto && (
+                <div className="relative w-full h-full min-h-[380px] sm:min-h-[480px] lg:min-h-[520px] flex items-center justify-center bg-black">
+                  <img
+                    src={capturedPhoto}
+                    alt="Captured Prayer Stamp"
+                    className="w-full max-h-[580px] object-contain rounded-2xl shadow-2xl"
+                  />
+                  <div className="absolute top-4 right-4">
+                    <button
+                      type="button"
+                      onClick={handleRetake}
+                      className="px-4 py-2 bg-slate-900/90 text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      <span>ถ่ายใหม่</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-3">
-                <button
-                  type="button"
-                  onClick={() => startCamera()}
-                  className="px-8 py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/30"
-                >
-                  <Maximize2 className="w-4 h-4" />
-                  <span>เปิดกล้องถ่ายภาพสด</span>
-                </button>
+              {/* Case C: Camera stopped / not opened yet */}
+              {!isCameraActive && !capturedPhoto && (
+                <div className="p-8 text-center space-y-4 my-auto">
+                  <div className="w-20 h-20 rounded-3xl bg-emerald-900/50 text-emerald-400 border border-emerald-700/60 flex items-center justify-center mx-auto shadow-2xl">
+                    <Camera className="w-10 h-10" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-white">กล้องถ่ายรูปเช็คละหมาดสด</h3>
+                    <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
+                      กดปุ่มเปิดกล้อง ประทับวัน เวลา (วินาที) และพิกัด GPS อัตโนมัติ
+                    </p>
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 font-bold text-xs sm:text-sm shadow-lg flex items-center gap-2 transform active:scale-95 transition-all"
-                >
-                  <Camera className="w-4 h-4 text-emerald-400" />
-                  <span>ถ่ายด้วยกล้องหลักอุปกรณ์</span>
-                </button>
-              </div>
+                  {cameraError && (
+                    <div className="p-3.5 bg-rose-950/80 border border-rose-800 text-rose-300 text-xs rounded-2xl flex items-center gap-2.5 max-w-md mx-auto text-left">
+                      <AlertCircle className="w-5 h-5 shrink-0 text-rose-400" />
+                      <span>{cameraError}</span>
+                    </div>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 w-full max-w-lg mx-auto">
+                    <button
+                      type="button"
+                      onClick={() => startCamera()}
+                      className="w-full sm:w-auto flex-1 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40 cursor-pointer"
+                    >
+                      <Maximize2 className="w-4 h-4 text-amber-300 animate-pulse" />
+                      <span>เปิดกล้องถ่ายภาพสด</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transform active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4 text-emerald-400" />
+                      <span>กล้องอุปกรณ์</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleGenerateTestPhoto}
+                      className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transform active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-300" />
+                      <span>ถ่ายภาพจำลอง</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Final Submit Button */}
-        <button
-          type="button"
-          disabled={!capturedPhoto || isSubmitting}
-          onClick={handleSubmitCheckin}
-          className={`w-full py-4 rounded-2xl font-extrabold text-base flex items-center justify-center gap-2.5 transition-all shadow-xl ${
-            capturedPhoto && !isSubmitting
-              ? 'bg-emerald-700 hover:bg-emerald-800 text-white active:scale-[0.99] ring-2 ring-emerald-500/50'
-              : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
-          }`}
-        >
-          <CheckCircle2 className="w-6 h-6" />
-          <span>
-            {isSubmitting
-              ? 'กำลังบันทึกข้อมูล...'
-              : `บันทึกข้อมูลเช็คละหมาด ${
-                  PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label
-                }`}
-          </span>
-        </button>
+            {/* Final Save Action Button */}
+            {capturedPhoto && (
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleSubmitCheckin}
+                className="w-full py-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-base flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-[0.99] ring-2 ring-emerald-500/50 cursor-pointer"
+              >
+                <CheckCircle2 className="w-6 h-6" />
+                <span>
+                  {isSubmitting
+                    ? 'กำลังบันทึกข้อมูล...'
+                    : `บันทึกละหมาด ${PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label} ทันที`}
+                </span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Today's Checkin Status Card with Photo Thumbnails, Time with Seconds & GPS Coordinates */}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { Student } from '../../types';
@@ -18,7 +18,9 @@ import {
   UserCheck,
   CheckCircle2,
   BookOpen,
-  Flame
+  Flame,
+  Sparkles,
+  Bell
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -47,8 +49,52 @@ ChartJS.register(
   Title
 );
 
+interface ChatMessage {
+  id: string;
+  sender: 'student' | 'admin';
+  senderName: string;
+  studentId?: string;
+  text: string;
+  timestamp: string;
+  status: 'sent' | 'read';
+  topicTag?: string;
+}
+
+const INITIAL_ADMIN_CHAT: ChatMessage[] = [
+  {
+    id: 'msg-101',
+    sender: 'student',
+    senderName: 'มูฮัมหมัด อะลี',
+    studentId: 'M0101',
+    text: 'สวัสดีครับแอดมิน วันนี้ผมขออนุญาตแจ้งลาป่วยครับ มีอาการไข้ขึ้นสูง มีใบรับรองแพทย์จากโรงพยาบาลครับ',
+    timestamp: '08:45 น.',
+    status: 'sent',
+    topicTag: 'แจ้งลา'
+  },
+  {
+    id: 'msg-102',
+    sender: 'student',
+    senderName: 'ฟาฏินะฮ์ สะมาแอ',
+    studentId: 'M0102',
+    text: 'สอบถามเรื่องคะแนนเช็คชื่อละหมาดวันศุกร์ย้อนหลังค่ะ ระบบขึ้นว่าขาด แต่หนูไปละหมาดที่มัสยิดกลางค่ะ',
+    timestamp: '10:15 น.',
+    status: 'sent',
+    topicTag: 'เช็คชื่อ'
+  },
+  {
+    id: 'msg-103',
+    sender: 'student',
+    senderName: 'อับดุลเลาะห์ สาและ',
+    studentId: 'M0201',
+    text: 'รบกวนแอดมินช่วยรีเซ็ตรหัสผ่านเข้าใช้งานให้หน่อยครับ ผมจำรหัสเดิมไม่ได้ครับ',
+    timestamp: '11:30 น.',
+    status: 'sent',
+    topicTag: 'บัญชี'
+  }
+];
+
 export const DashboardView: React.FC = () => {
-  const { students, records, scoreRules, setActiveTab, setSelectedStudentId } = useApp();
+  const { students, records, scoreRules, setActiveTab, setSelectedStudentId, showSnackbar } = useApp();
 
   // Date selection state: default to today
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -59,7 +105,7 @@ export const DashboardView: React.FC = () => {
 
   // Detail Drilldown Modal State
   const [detailModal, setDetailModal] = useState<
-    'total' | 'ontime' | 'late' | 'leave' | 'absent_class' | 'absent_prayer' | 'absent_halaqah' | null
+    'total' | 'ontime' | 'late' | 'leave' | 'absent_class' | 'absent_prayer' | 'absent_halaqah' | 'ontime_prayer' | null
   >(null);
   const [modalSearch, setModalSearch] = useState<string>('');
 
@@ -140,11 +186,13 @@ export const DashboardView: React.FC = () => {
     let totalLeaveCount = 0;
     let absentClassCount = 0;
     let absentPrayerCount = 0;
+    let onTimePrayerCount = 0;
     let absentHalaqahCount = 0;
 
     filteredRecords.forEach((r) => {
-      // Prayer absent
+      // Prayer absent / ontime
       Object.values(r.prayer).forEach((st) => {
+        if (st === 'Present') onTimePrayerCount++;
         if (st === 'Absent') absentPrayerCount++;
       });
 
@@ -179,6 +227,7 @@ export const DashboardView: React.FC = () => {
       totalLeaveCount,
       absentClassCount,
       absentPrayerCount,
+      onTimePrayerCount,
       absentHalaqahCount,
     };
   }, [gradeStudents, filteredRecords]);
@@ -366,7 +415,7 @@ export const DashboardView: React.FC = () => {
           (r.note && (r.note.includes('ลา') || r.note.includes('บ้าน') || r.note.includes('ป่วย')))
         ) {
           const lNote = r.discipline?.leaveNote || r.note;
-          details.push(lNote ? `แจ้งลาเรียน: ${lNote}` : 'ลาเรียน / อยู่บ้าน');
+          details.push(lNote ? `แจ้งลาเรียน: ${lNote}` : 'ลาเรียน');
         }
       } else if (detailModal === 'absent_class') {
         if (r.discipline?.attendanceStatus === 'Absent') {
@@ -380,6 +429,10 @@ export const DashboardView: React.FC = () => {
         Object.entries(r.halaqah).forEach(([hKey, st]) => {
           if (st === 'Absent') details.push(`ขาด${halaqahNames[hKey] || hKey}`);
         });
+      } else if (detailModal === 'ontime_prayer') {
+        Object.entries(r.prayer).forEach(([pKey, st]) => {
+          if (st === 'Present') details.push(`ละหมาด${prayerNames[pKey] || pKey} ตรงเวลา`);
+        });
       }
 
       if (details.length > 0) {
@@ -390,6 +443,7 @@ export const DashboardView: React.FC = () => {
         else if (detailModal === 'absent_class') typeName = 'ขาดเรียน';
         else if (detailModal === 'absent_prayer') typeName = 'ขาดละหมาด';
         else if (detailModal === 'absent_halaqah') typeName = 'ขาดหะลาเกาะฮฺ';
+        else if (detailModal === 'ontime_prayer') typeName = 'ละหมาดตรงเวลา';
 
         items.push({
           id: `${r.id}-${detailModal}`,
@@ -409,7 +463,7 @@ export const DashboardView: React.FC = () => {
             id: s.id,
             student: s,
             date: selectedDate || new Date().toISOString().split('T')[0],
-            type: 'ลาเรียน / อยู่บ้าน',
+            type: 'ลาเรียน',
             details: [`สถานะนักเรียน: ${s.status}`, `หอพัก: ${s.dorm}`],
             note: 'ลงทะเบียนลาเรียน / ติดตามพฤติกรรม',
           });
@@ -703,7 +757,30 @@ export const DashboardView: React.FC = () => {
           </span>
         </div>
 
-        {/* 6. ขาดละหมาด */}
+        {/* 6. ละหมาดตรงเวลา */}
+        <div
+          onClick={() => {
+            setDetailModal('ontime_prayer');
+            setModalSearch('');
+          }}
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-emerald-300 dark:hover:border-emerald-700 active:scale-95"
+          title="กดเพื่อดูรายชื่อนักเรียนที่ละหมาดตรงเวลา"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">ละหมาดตรงเวลา</span>
+            <div className="p-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 rounded-2xl group-hover:scale-110 transition-transform">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            {stats.onTimePrayerCount}
+          </div>
+          <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 block font-medium">
+            เวลาที่ตรงเวลา (กดดูรายชื่อ)
+          </span>
+        </div>
+
+        {/* 7. ขาดละหมาด */}
         <div
           onClick={() => {
             setDetailModal('absent_prayer');
@@ -726,13 +803,13 @@ export const DashboardView: React.FC = () => {
           </span>
         </div>
 
-        {/* 7. ขาดหะลาเกาะฮฺ */}
+        {/* 8. ขาดหะลาเกาะฮฺ */}
         <div
           onClick={() => {
             setDetailModal('absent_halaqah');
             setModalSearch('');
           }}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-teal-300 dark:hover:border-teal-700 active:scale-95 col-span-2 sm:col-span-1"
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3.5 sm:p-4 shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-teal-300 dark:hover:border-teal-700 active:scale-95"
           title="กดเพื่อดูรายชื่อนักเรียนที่ขาดหะลาเกาะฮฺ"
         >
           <div className="flex items-center justify-between mb-2">

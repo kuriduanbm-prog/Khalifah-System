@@ -38,7 +38,7 @@ export function exportToExcel(students: Student[], records: DailyRecord[], rules
       'ระดับวินัย': badge.labelThai,
       'ขาดละหมาด (ครั้ง)': totalAbsentPrayer,
       'ละหมาดสาย (ครั้ง)': totalLatePrayer,
-      'นักเรียนอยู่บ้าน (ครั้ง)': totalAbsentHalaqah
+      'ลาเรียน (ครั้ง)': totalAbsentHalaqah
     };
   });
 

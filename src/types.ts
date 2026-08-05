@@ -26,6 +26,7 @@ export interface Student {
   id: string; // Student ID e.g., "6512345678"
   fullName: string;
   nickname: string;
+  futureCareer?: string; // อาชีพในอนาคต (Future Career)
   faculty: string; // คณะวิทยาศาสตร์และเทคโนโลยี / โรงเรียนสาธิต
   programme: string; // สาขาวิชา / แผนการเรียน
   year: number | string; // 1, 2, 3, 4 หรือ 'ม.4', 'ม.5', 'ม.6', 'มัธยมศึกษาปีที่ 4-6'
@@ -113,7 +114,7 @@ export interface OrgSettings {
   apiUrl: string;
 }
 
-export type ScoreBadgeLevel = 'Excellent' | 'Very Good' | 'Good' | 'Need Improvement' | 'Critical';
+export type ScoreBadgeLevel = 'Excellent' | 'Very Good' | 'Good' | 'Need Improvement' | 'Warning' | 'Critical' | 'Extreme Critical';
 
 export interface ScoreBadgeInfo {
   level: ScoreBadgeLevel;
