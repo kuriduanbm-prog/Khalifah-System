@@ -34,15 +34,23 @@ export const NAV_ITEMS = [
 export const NavDrawer: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, unsyncedCount, isAdmin, isTeacher, isStudent } = useApp();
 
-  const filteredNavItems = NAV_ITEMS.filter((item) => {
+  const studentNavOrder = ['schedule', 'profile', 'student_checkin', 'my_account'];
+
+  let filteredNavItems = NAV_ITEMS.filter((item) => {
     if (isStudent) {
-      return item.id === 'schedule' || item.id === 'khalifah_info' || item.id === 'student_checkin' || item.id === 'profile' || item.id === 'my_account';
+      return studentNavOrder.includes(item.id);
     }
     if (isTeacher) {
       return item.id !== 'settings' && item.id !== 'profile' && item.id !== 'student_checkin';
     }
     return item.id !== 'profile' && item.id !== 'student_checkin';
   });
+
+  if (isStudent) {
+    filteredNavItems = studentNavOrder
+      .map((id) => NAV_ITEMS.find((item) => item.id === id))
+      .filter(Boolean) as typeof NAV_ITEMS;
+  }
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 min-h-[calc(100vh-65px)]">
@@ -62,7 +70,7 @@ export const NavDrawer: React.FC = () => {
         {isStudent && (
           <div className="mt-2.5">
             <p className="text-[10px] text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-900/70 p-2 rounded-xl leading-relaxed border border-sky-100 dark:border-sky-900">
-              🔒 สำหรับนักเรียน: ดูผลการเรียน, ตารางเรียน, ข่าวสารกิจกรรม และจัดการรหัสผ่านส่วนตัว
+              🔒 สำหรับนักเรียน: ดูผลการเรียน, ตารางเรียน, เช็คละหมาด และจัดการรหัสผ่านส่วนตัว
             </p>
           </div>
         )}

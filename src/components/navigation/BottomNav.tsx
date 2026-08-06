@@ -35,9 +35,8 @@ export const BottomNav: React.FC = () => {
 
   const studentNavs = [
     { id: 'schedule', label: 'ตารางเรียน', icon: CalendarDays },
-    { id: 'khalifah_info', label: 'ข่าวสาร/ความรู้ทั่วไป', icon: BookOpen },
-    { id: 'student_checkin', label: 'เช็คละหมาด', icon: Camera, isProminent: true },
     { id: 'profile', label: 'ผลการเรียน', icon: GraduationCap },
+    { id: 'student_checkin', label: 'เช็คละหมาด', icon: Camera, isProminent: true },
     { id: 'my_account', label: 'ฉัน', icon: User },
   ];
 

@@ -171,7 +171,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
           });
           setIsFetchingGps(false);
           setIsGpsConfirmed(true);
-          showSnackbar('📍 ระบุและยืนยันพิกัด GPS ตำแหน่งปัจจุบันล่าสุดสำเร็จแล้ว', 'success');
+          showSnackbar('📍 อัพเดทตำแหน่งปัจจุบันแล้ว', 'success');
           if (autoStartCam && !isCameraActive && !capturedPhoto) {
             startCamera();
           }
@@ -520,7 +520,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
         setCapturedPhoto(dataUrl);
         setCapturedTimestamp(timestampFull);
-        showSnackbar('ประทับตราวัน เวลา และพิกัด GPS บนรูปเรียบร้อยแล้ว', 'success');
+        saveCheckinRecord(dataUrl, timestampFull);
       };
       img.src = event.target?.result as string;
     };
@@ -583,7 +583,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
     setCapturedPhoto(dataUrl);
     setCapturedTimestamp(timestampFull);
-    showSnackbar('สร้างภาพถ่ายประทับตราวัน เวลา และพิกัด GPS เรียบร้อยแล้ว', 'success');
+    saveCheckinRecord(dataUrl, timestampFull);
   };
 
   const handleRetake = () => {
@@ -598,14 +598,9 @@ export const StudentPrayerCheckinView: React.FC = () => {
     };
   }, []);
 
-  // Save checkin record & save photo/GPS details to local storage
-  const handleSubmitCheckin = async () => {
+  // Unified helper to save checkin record and replace existing photo/metadata
+  const saveCheckinRecord = async (photoUrl: string, timestampStr: string) => {
     if (!student) return;
-    if (!capturedPhoto) {
-      showSnackbar('กรุณาถ่ายรูปยืนยันตัวตนก่อนบันทึก', 'warning');
-      return;
-    }
-
     setIsSubmitting(true);
 
     const existingRecord = records.find(
@@ -636,18 +631,19 @@ export const StudentPrayerCheckinView: React.FC = () => {
         cleaning: false,
       },
       bonus: existingRecord?.bonus,
-      note: `เช็คละหมาดสดเมื่อ ${capturedTimestamp || ''} ณ ${locationName}`,
+      note: `เช็คละหมาดสดเมื่อ ${timestampStr} ณ ${locationName}`,
       recorder: `${student.fullName} (นักเรียนเช็คเอง)`,
       timestamp: new Date().toISOString(),
     };
 
     await addOrUpdateRecord(newRecord);
 
-    // Save detailed photo & GPS metadata for status cards
+    const isReplacing = !!prayerDetailsMap[selectedPrayer];
+
     const newDetail: PrayerCheckinDetail = {
       prayerKey: selectedPrayer,
-      photoUrl: capturedPhoto,
-      timestampStr: capturedTimestamp || new Date().toLocaleString('th-TH'),
+      photoUrl,
+      timestampStr,
       lat: userCoords.lat,
       lng: userCoords.lng,
       locationName,
@@ -665,16 +661,29 @@ export const StudentPrayerCheckinView: React.FC = () => {
     }
 
     setIsSubmitting(false);
-    setCapturedPhoto(null);
-    setCapturedTimestamp(null);
+    setCapturedPhoto(photoUrl);
+    setCapturedTimestamp(timestampStr);
 
+    const prayerLabel = PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label;
     showSnackbar(
-      `บันทึกการเช็คละหมาด ${PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label} เรียบร้อยแล้ว!`,
+      isReplacing
+        ? `📷 อัปเดตและแทนที่รูปเช็คละหมาด ${prayerLabel} เรียบร้อยแล้ว!`
+        : `📸 บันทึกการเช็คละหมาด ${prayerLabel} เรียบร้อยแล้ว!`,
       'success'
     );
   };
 
-  // ⚡ Instant 1-Tap Snapshot & Save for Rush Mode
+  // Save checkin record manually
+  const handleSubmitCheckin = async () => {
+    if (!student) return;
+    if (!capturedPhoto) {
+      showSnackbar('กรุณาถ่ายรูปยืนยันตัวตนก่อนบันทึก', 'warning');
+      return;
+    }
+    await saveCheckinRecord(capturedPhoto, capturedTimestamp || new Date().toLocaleString('th-TH'));
+  };
+
+  // ⚡ Instant Camera Icon Snapshot & Save
   const handleInstantQuickCheckin = async () => {
     if (!videoRef.current) {
       showSnackbar('กล้องยังไม่พร้อมเปิดถ่ายภาพ', 'warning');
@@ -719,71 +728,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
     const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
 
     stopCamera();
-    setIsSubmitting(true);
-
-    const existingRecord = records.find(
-      (r) => r.studentId === student?.id && r.date === todayStr
-    );
-
-    const updatedPrayer = existingRecord
-      ? { ...existingRecord.prayer, [selectedPrayer]: 'Present' as PrayerStatus }
-      : {
-          subuh: selectedPrayer === 'subuh' ? 'Present' : 'Absent',
-          zuhr: selectedPrayer === 'zuhr' ? 'Present' : 'Absent',
-          asr: selectedPrayer === 'asr' ? 'Present' : 'Absent',
-          maghrib: selectedPrayer === 'maghrib' ? 'Present' : 'Absent',
-          isha: selectedPrayer === 'isha' ? 'Present' : 'Absent',
-        };
-
-    const newRecord: DailyRecord = {
-      id: existingRecord ? existingRecord.id : `${todayStr}_${student?.id || '0'}`,
-      date: todayStr,
-      studentId: student?.id || '',
-      studentName: student?.fullName || 'นักเรียน',
-      prayer: updatedPrayer,
-      halaqah: existingRecord?.halaqah || { subuh: 'Absent', asr: 'Absent', isha: 'Absent' },
-      discipline: existingRecord?.discipline || {
-        lateActivity: false,
-        dress: false,
-        phone: false,
-        cleaning: false,
-      },
-      bonus: existingRecord?.bonus,
-      note: `เช็คละหมาดสดด่วนเมื่อ ${timestampFull} ณ ${locationName}`,
-      recorder: `${student?.fullName || 'นักเรียน'} (เช็คด่วน 1-Tap)`,
-      timestamp: new Date().toISOString(),
-    };
-
-    await addOrUpdateRecord(newRecord);
-
-    const newDetail: PrayerCheckinDetail = {
-      prayerKey: selectedPrayer,
-      photoUrl: dataUrl,
-      timestampStr: timestampFull,
-      lat: userCoords.lat,
-      lng: userCoords.lng,
-      locationName,
-      isInsideMosque,
-      distanceToMosque: Math.round(distanceToMosque),
-    };
-
-    const storageKey = `khalifah_prayer_details_${student?.id || '0'}_${todayStr}`;
-    const updatedMap = { ...prayerDetailsMap, [selectedPrayer]: newDetail };
-    setPrayerDetailsMap(updatedMap);
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(updatedMap));
-    } catch (e) {
-      console.warn('Failed to save to localStorage:', e);
-    }
-
-    setIsSubmitting(false);
-    setCapturedPhoto(null);
-    setCapturedTimestamp(null);
-
-    showSnackbar(
-      `⚡ เช็คละหมาด ${PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label} สำเร็จเรียบร้อยใน 1 คลิก!`,
-      'success'
-    );
+    await saveCheckinRecord(dataUrl, timestampFull);
   };
 
   const todayRecord = records.find((r) => r.studentId === student?.id && r.date === todayStr);
@@ -979,46 +924,40 @@ export const StudentPrayerCheckinView: React.FC = () => {
                   </div>
 
                   {/* Bottom Camera Speed Action Bar */}
-                  <div className="absolute bottom-4 left-4 right-4 flex flex-col sm:flex-row items-center justify-between gap-2 p-3 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl z-10">
-                    <div className="flex items-center gap-2 w-full sm:w-auto justify-between">
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 p-3 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl z-10">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={toggleCameraFacing}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                        title="สลับกล้อง หน้า/หลัง"
                       >
                         <RefreshCw className="w-4 h-4 text-emerald-400" />
-                        <span>สลับกล้อง ({facingMode === 'user' ? 'หน้า' : 'หลัง'})</span>
+                        <span className="hidden sm:inline">สลับกล้อง ({facingMode === 'user' ? 'หน้า' : 'หลัง'})</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={stopCamera}
-                        className="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                        className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
                       >
                         ปิดกล้อง
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
-                      <button
-                        type="button"
-                        onClick={captureSnapshot}
-                        className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                      >
-                        <Camera className="w-4 h-4 text-amber-400" />
-                        <span>ถ่ายดูก่อน</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={handleInstantQuickCheckin}
-                        className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40 cursor-pointer"
-                      >
-                        <Sparkles className="w-4 h-4 text-amber-300 animate-spin-slow" />
-                        <span>⚡ ถ่ายและบันทึก{PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label}ทันที (1-Click)</span>
-                      </button>
-                    </div>
+                    {/* Camera Shutter Icon Button - Instantly Captures & Saves */}
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={handleInstantQuickCheckin}
+                      className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2.5 transform active:scale-95 transition-all ring-4 ring-emerald-400/40 cursor-pointer animate-pulse"
+                      title="กดถ่ายรูปและบันทึกทันที"
+                    >
+                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                        <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                      </div>
+                      <span>ถ่ายรูป & บันทึก ({PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label})</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -1031,14 +970,19 @@ export const StudentPrayerCheckinView: React.FC = () => {
                     alt="Captured Prayer Stamp"
                     className="w-full max-h-[580px] object-contain rounded-2xl shadow-2xl"
                   />
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-4 right-4 flex items-center gap-2">
+                    <span className="bg-emerald-600/90 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-lg border border-emerald-400/50 flex items-center gap-1.5">
+                      <Check className="w-4 h-4" />
+                      <span>บันทึกเรียบร้อยแล้ว</span>
+                    </span>
                     <button
                       type="button"
                       onClick={handleRetake}
-                      className="px-4 py-2 bg-slate-900/90 text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                      className="px-4 py-2 bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl transition-colors cursor-pointer"
+                      title="ถ่ายภาพใหม่เพื่อแทนที่รูปเดิม"
                     >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>ถ่ายใหม่</span>
+                      <RotateCcw className="w-4 h-4 text-emerald-400" />
+                      <span>ถ่ายใหม่ (แทนที่รูปเดิม)</span>
                     </button>
                   </div>
                 </div>
@@ -1053,7 +997,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
                   <div>
                     <h3 className="text-base font-bold text-white">กล้องถ่ายรูปเช็คละหมาดสด</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
-                      กดปุ่มเปิดกล้อง ประทับวัน เวลา (วินาที) และพิกัด GPS อัตโนมัติ
+                      กดปุ่มเปิดกล้องและไอคอนถ่ายรูปเพื่อประทับวัน เวลา (วินาที) พิกัด GPS และบันทึกทันที
                     </p>
                   </div>
 
@@ -1079,7 +1023,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
                       onClick={() => startCamera()}
                       className="w-full sm:w-auto flex-1 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40 cursor-pointer"
                     >
-                      <Maximize2 className="w-4 h-4 text-amber-300 animate-pulse" />
+                      <Camera className="w-4 h-4 text-amber-300 animate-bounce" />
                       <span>เปิดกล้องถ่ายภาพสด</span>
                     </button>
 
@@ -1205,17 +1149,35 @@ export const StudentPrayerCheckinView: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                  ) : isDone ? (
-                    <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium pt-1">
-                      บันทึกสถานะเรียบร้อยแล้ว
-                    </div>
+                  ) : null}
+
+                  {isDone ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPrayer(p.key);
+                        setCapturedPhoto(null);
+                        setCapturedTimestamp(null);
+                        startCamera();
+                      }}
+                      className="w-full mt-2.5 py-1.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-emerald-600/20 text-slate-700 dark:text-slate-300 hover:text-emerald-600 font-bold text-[10px] flex items-center justify-center gap-1 transition-all cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <span>ถ่ายรูปใหม่ (แทนที่)</span>
+                    </button>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setSelectedPrayer(p.key)}
-                      className="w-full mt-2 py-1.5 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold text-[11px] transition-colors"
+                      onClick={() => {
+                        setSelectedPrayer(p.key);
+                        setCapturedPhoto(null);
+                        setCapturedTimestamp(null);
+                        startCamera();
+                      }}
+                      className="w-full mt-2 py-1.5 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 font-bold text-[11px] flex items-center justify-center gap-1 transition-colors cursor-pointer"
                     >
-                      เช็คละหมาดนี้
+                      <Camera className="w-3 h-3" />
+                      <span>เปิดกล้องเช็คละหมาดนี้</span>
                     </button>
                   )}
                 </div>

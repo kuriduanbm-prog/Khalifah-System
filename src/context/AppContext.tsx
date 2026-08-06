@@ -186,7 +186,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveTabRaw('login');
       return;
     }
-    if (isStudent && tab !== 'profile' && tab !== 'my_account' && tab !== 'login' && tab !== 'student_checkin' && tab !== 'schedule' && tab !== 'khalifah_info') {
+    if (isStudent && tab !== 'profile' && tab !== 'my_account' && tab !== 'login' && tab !== 'student_checkin' && tab !== 'schedule') {
       showSnackbar('นักเรียนสามารถเข้าถึงได้เฉพาะเมนูสำหรับนักเรียนเท่านั้น', 'info');
       setActiveTabRaw('profile');
       return;
@@ -261,7 +261,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const showSnackbar = (text: string, type: SnackbarMessage['type'] = 'info') => {
     const id = Date.now().toString() + Math.random().toString().slice(2, 5);
-    setSnackbars((prev) => [...prev, { id, text, type }]);
+    setSnackbars((prev) => {
+      if (prev.some((s) => s.text === text)) return prev;
+      return [...prev, { id, text, type }];
+    });
 
     setTimeout(() => {
       removeSnackbar(id);
