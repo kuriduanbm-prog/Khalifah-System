@@ -157,8 +157,8 @@ export const StudentPrayerCheckinView: React.FC = () => {
     ? 'มัสยิดอัลฮารอมัยน์ มหาวิทยาลัยฟาฏอนี'
     : `นอกเขตมัสยิดอัลฮารอมัยน์ (ห่าง ${Math.round(distanceToMosque)} เมตร)`;
 
-  // Fetch real GPS position
-  const fetchGpsCoordinates = (autoStartCam = false) => {
+  // Fetch real GPS position & auto-launch camera
+  const fetchGpsCoordinates = (autoStartCam = true) => {
     if ('geolocation' in navigator) {
       setIsFetchingGps(true);
       navigator.geolocation.getCurrentPosition(
@@ -171,8 +171,8 @@ export const StudentPrayerCheckinView: React.FC = () => {
           });
           setIsFetchingGps(false);
           setIsGpsConfirmed(true);
-          showSnackbar('📍 อัพเดทตำแหน่งปัจจุบันแล้ว', 'success');
-          if (autoStartCam && !isCameraActive && !capturedPhoto) {
+          showSnackbar('📍 ดึงพิกัด GPS สำเร็จ - เปิดกล้องอัตโนมัติ', 'success');
+          if (autoStartCam && !capturedPhoto) {
             startCamera();
           }
         },
@@ -180,7 +180,10 @@ export const StudentPrayerCheckinView: React.FC = () => {
           console.warn('Geolocation access error:', err);
           setIsFetchingGps(false);
           setIsGpsConfirmed(false);
-          showSnackbar('❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาเปิดสิทธิ์เข้าถึงตำแหน่งในเบราว์เซอร์แล้วลองอีกครั้ง', 'error');
+          showSnackbar('❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาเปิดสิทธิ์พิกัดในเบราว์เซอร์', 'error');
+          if (autoStartCam && !capturedPhoto) {
+            startCamera();
+          }
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
@@ -188,14 +191,17 @@ export const StudentPrayerCheckinView: React.FC = () => {
       setIsFetchingGps(false);
       setIsGpsConfirmed(false);
       showSnackbar('❌ อุปกรณ์หรือเบราว์เซอร์ไม่รองรับ GPS', 'error');
+      if (autoStartCam && !capturedPhoto) {
+        startCamera();
+      }
     }
   };
 
   const [isGpsConfirmed, setIsGpsConfirmed] = useState<boolean>(false);
 
   useEffect(() => {
-    // Attempt location fetch on mount
-    fetchGpsCoordinates(false);
+    // Attempt location fetch on mount and auto-open camera upon coordinates acquired
+    fetchGpsCoordinates(true);
   }, []);
 
   const confirmGpsAndStartCamera = () => {
@@ -1025,15 +1031,6 @@ export const StudentPrayerCheckinView: React.FC = () => {
                     >
                       <Camera className="w-4 h-4 text-amber-300 animate-bounce" />
                       <span>เปิดกล้องถ่ายภาพสด</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transform active:scale-95 transition-all cursor-pointer"
-                    >
-                      <Camera className="w-4 h-4 text-emerald-400" />
-                      <span>กล้องอุปกรณ์</span>
                     </button>
 
                     <button

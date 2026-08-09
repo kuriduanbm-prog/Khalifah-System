@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { UserRole, User, Student } from '../../types';
 import { SystemLogo } from '../common/SystemLogo';
 import { postStudentRegistrationToGoogleScript } from '../../services/api';
+import { CAREER_PRESETS } from '../common/AnimatedCareerAvatar';
 import {
   KeyRound,
   ShieldCheck,
@@ -437,7 +438,7 @@ export const LoginPage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="col-span-1 sm:col-span-2">
+                    <div className="col-span-1 sm:col-span-2 space-y-1.5">
                       <label className="block font-bold text-amber-600 dark:text-amber-400 mb-1 flex items-center justify-between text-xs">
                         <span>🎯 อาชีพในอนาคต (Future Career)</span>
                         <span className="text-[10px] bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full">แสดงเด่นในโปรไฟล์</span>
@@ -447,8 +448,24 @@ export const LoginPage: React.FC = () => {
                         placeholder="เช่น วิศวกร AI, แพทย์เฉพาะทาง, สถาปนิก, นักธุรกิจ ฯลฯ"
                         value={regForm.futureCareer}
                         onChange={(e) => setRegForm({ ...regForm, futureCareer: e.target.value })}
-                        className="w-full px-3 py-2 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl outline-none font-bold text-slate-900 dark:text-slate-100"
+                        className="w-full px-3 py-2 bg-amber-50/60 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl outline-none font-bold text-slate-900 dark:text-slate-100 text-xs sm:text-sm"
                       />
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {CAREER_PRESETS.slice(0, 8).map((preset) => (
+                          <button
+                            key={preset.value}
+                            type="button"
+                            onClick={() => setRegForm({ ...regForm, futureCareer: preset.value })}
+                            className={`text-[9px] px-2 py-0.5 rounded-md border transition-all cursor-pointer font-bold ${
+                              regForm.futureCareer === preset.value
+                                ? 'bg-amber-500 text-amber-950 border-amber-600 font-black'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div>

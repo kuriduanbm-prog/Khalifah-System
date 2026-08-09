@@ -223,39 +223,33 @@ export const StudentProfileView: React.FC = () => {
         </div>
       </div>
 
-      {/* Prominent Large Display of Future Career (อาชีพในอนาคต) with Animated Cartoon Avatar */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 text-white rounded-3xl p-5 sm:p-6 shadow-md relative overflow-hidden border border-emerald-400/30">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6 z-10 relative">
-          <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left w-full">
-            {/* Animated Cartoon Avatar Matching Future Career */}
-            <div className="shrink-0 bg-white/10 backdrop-blur-md p-2.5 rounded-3xl border border-white/20 shadow-inner flex items-center justify-center">
-              <AnimatedCareerAvatar career={student.futureCareer} size="lg" showBadge={false} />
-            </div>
+      {/* Compact & Space-Saving Future Career Banner */}
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-700 text-white rounded-2xl p-3 sm:p-3.5 shadow-sm relative overflow-hidden border border-emerald-400/30 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="shrink-0 bg-white/10 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 shadow-inner flex items-center justify-center">
+            <AnimatedCareerAvatar career={student.futureCareer} size="sm" showBadge={false} />
+          </div>
 
-            <div className="space-y-1 min-w-0 flex-1">
-              <div className="inline-flex items-center justify-center sm:justify-start gap-1.5 text-xs font-black text-amber-300 uppercase tracking-wide px-3 py-1 bg-black/20 backdrop-blur-md rounded-full border border-white/10">
-                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                <span>เป้าหมายอาชีพในอนาคต (Future Career Goal)</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white drop-shadow-md tracking-tight leading-tight">
-                {student.futureCareer || 'ยังไม่ได้ระบุอาชีพในอนาคต'}
-              </h2>
-              <p className="text-xs text-sky-100/90 leading-relaxed">
-                การ์ตูนเคลื่อนไหวสะท้อนอาชีพเป้าหมายเพื่อเป็นแรงบันดาลใจในการศึกษาและการทำความดีประจำวัน
-              </p>
+          <div className="min-w-0 space-y-0.5">
+            <div className="flex items-center gap-1.5 text-[10px] font-black text-amber-300 uppercase tracking-wider">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+              <span>เป้าหมายอาชีพในอนาคต</span>
             </div>
-
-            {student.futureCareer ? (
-              <span className="px-4 py-2.5 bg-amber-400 text-amber-950 font-black text-xs sm:text-sm rounded-2xl shadow-md shrink-0 flex items-center gap-1.5 border border-amber-200 self-center">
-                <span>🎯 เป้าหมายหลักนักเรียน</span>
-              </span>
-            ) : (
-              <span className="text-xs text-amber-100/80 bg-white/10 px-3.5 py-2 rounded-xl border border-white/20 shrink-0 self-center">
-                สามารถแก้ไขได้ในเมนู "ส่วนตัว"
-              </span>
-            )}
+            <h2 className="text-sm sm:text-base font-black text-white drop-shadow-xs truncate">
+              {student.futureCareer || 'ยังไม่ได้ระบุอาชีพในอนาคต'}
+            </h2>
           </div>
         </div>
+
+        {student.futureCareer ? (
+          <span className="px-3 py-1.5 bg-amber-400 text-amber-950 font-black text-xs rounded-xl shadow-xs shrink-0 hidden sm:flex items-center gap-1 border border-amber-200">
+            <span>🎯 เป้าหมายหลัก</span>
+          </span>
+        ) : (
+          <span className="text-[11px] text-amber-100/90 bg-white/10 px-2.5 py-1 rounded-lg border border-white/20 shrink-0 hidden sm:inline">
+            แก้ไขใน "ฉัน"
+          </span>
+        )}
       </div>
 
       {/* Stats Cards */}

@@ -15,12 +15,16 @@ import {
   BookOpen,
   Award,
   Zap,
-  Briefcase
+  Briefcase,
+  Trophy,
+  Sprout,
+  Video,
+  Globe
 } from 'lucide-react';
 
 export interface AnimatedCareerAvatarProps {
   career?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   showBadge?: boolean;
 }
@@ -35,7 +39,29 @@ export type CareerType =
   | 'artist'
   | 'chef'
   | 'police'
+  | 'sports'
+  | 'farmer'
+  | 'creator'
+  | 'diplomat'
   | 'default';
+
+export const CAREER_PRESETS = [
+  { label: '🩺 แพทย์ / ศัลยแพทย์ / เภสัชกร', value: 'แพทย์ / ศัลยแพทย์ / เภสัชกร' },
+  { label: '💻 วิศวกรซอฟต์แวร์ / นักพัฒนา AI', value: 'วิศวกรซอฟต์แวร์ และ AI' },
+  { label: '📊 นักวิทยาศาสตร์ข้อมูล (Data Scientist)', value: 'นักวิทยาศาสตร์ข้อมูล (Data Scientist)' },
+  { label: '🕌 อาจารย์ / นักวิชาการอิสลาม', value: 'อาจารย์ / นักวิชาการอิสลาม' },
+  { label: '🏫 ครูผู้สอน / นักการศึกษา', value: 'ครูผู้สอน' },
+  { label: '🚀 นักธุรกิจ / ผู้ประกอบการ CEO', value: 'นักธุรกิจ / ผู้ประกอบการ' },
+  { label: '✈️ นักบิน / วิศวกรการบิน', value: 'นักบิน' },
+  { label: '🎨 สถาปนิก / นักออกแบบกราฟิก', value: 'สถาปนิก / นักออกแบบ' },
+  { label: '🎥 คอนเทนต์ครีเอเตอร์ / ช่างภาพ', value: 'คอนเทนต์ครีเอเตอร์' },
+  { label: '👨‍🍳 เชฟ / ผู้เชี่ยวชาญอาหารฮาลาล', value: 'เชฟอาหารฮาลาล' },
+  { label: '⚖️ นักกฎหมาย / ทนายความ / ผู้พิพากษา', value: 'นักกฎหมาย / ทนายความ' },
+  { label: '🌐 นักการทูต / นักการสื่อสารต่างประเทศ', value: 'นักการทูต / นักการสื่อสารต่างประเทศ' },
+  { label: '🌾 เกษตรกรยุคใหม่ (Smart Farmer)', value: 'เกษตรกรยุคใหม่ (Smart Farmer)' },
+  { label: '🏀 นักกีฬาอาชีพ / โค้ช', value: 'นักกีฬาอาชีพ' },
+  { label: '🔬 นักวิทยาศาสตร์ / นักวิจัย', value: 'นักวิทยาศาสตร์ / นักวิจัย' },
+];
 
 export function getCareerType(careerString?: string): CareerType {
   if (!careerString) return 'default';
@@ -47,11 +73,14 @@ export function getCareerType(careerString?: string): CareerType {
     c.includes('พยาบาล') ||
     c.includes('ศัลยแพทย์') ||
     c.includes('เภสัช') ||
+    c.includes('ทันตแพทย์') ||
+    c.includes('สัตวแพทย์') ||
     c.includes('สาธารณสุข') ||
     c.includes('doctor') ||
     c.includes('nurse') ||
     c.includes('physician') ||
     c.includes('surgeon') ||
+    c.includes('dentist') ||
     c.includes('medical')
   ) {
     return 'doctor';
@@ -64,12 +93,14 @@ export function getCareerType(careerString?: string): CareerType {
     c.includes('ซอฟต์แวร์') ||
     c.includes('ไอที') ||
     c.includes('คอมพิวเตอร์') ||
+    c.includes('ไซเบอร์') ||
     c.includes('engineer') ||
     c.includes('developer') ||
     c.includes('programmer') ||
     c.includes('software') ||
     c.includes('coder') ||
-    c.includes('data')
+    c.includes('data') ||
+    c.includes('ai')
   ) {
     return 'engineer';
   }
@@ -94,6 +125,9 @@ export function getCareerType(careerString?: string): CareerType {
   if (
     c.includes('วิจัย') ||
     c.includes('วิทยาศาสตร์') ||
+    c.includes('ดาราศาสตร์') ||
+    c.includes('ชีววิทยา') ||
+    c.includes('เคมี') ||
     c.includes('scientist') ||
     c.includes('researcher') ||
     c.includes('lab')
@@ -108,6 +142,7 @@ export function getCareerType(careerString?: string): CareerType {
     c.includes('บัญชี') ||
     c.includes('บริหาร') ||
     c.includes('การเงิน') ||
+    c.includes('การตลาดดิจิทัล') ||
     c.includes('business') ||
     c.includes('ceo') ||
     c.includes('entrepreneur') ||
@@ -122,6 +157,8 @@ export function getCareerType(careerString?: string): CareerType {
     c.includes('กัปตัน') ||
     c.includes('อวกาศ') ||
     c.includes('การบิน') ||
+    c.includes('สจ๊วต') ||
+    c.includes('แอร์โฮสเตส') ||
     c.includes('pilot') ||
     c.includes('aviation') ||
     c.includes('astronaut')
@@ -148,6 +185,7 @@ export function getCareerType(careerString?: string): CareerType {
     c.includes('แม่ครัว') ||
     c.includes('ทำอาหาร') ||
     c.includes('โภชนาการ') ||
+    c.includes('ฮาลาล') ||
     c.includes('chef') ||
     c.includes('cook') ||
     c.includes('culinary')
@@ -161,12 +199,61 @@ export function getCareerType(careerString?: string): CareerType {
     c.includes('ทนาย') ||
     c.includes('ผู้พิพากษา') ||
     c.includes('นิติศาสตร์') ||
+    c.includes('กฎหมาย') ||
     c.includes('police') ||
     c.includes('lawyer') ||
     c.includes('judge') ||
     c.includes('military')
   ) {
     return 'police';
+  }
+
+  if (
+    c.includes('กีฬา') ||
+    c.includes('นักกีฬา') ||
+    c.includes('โค้ช') ||
+    c.includes('ฟุตบอล') ||
+    c.includes('แบดมินตัน') ||
+    c.includes('athlete') ||
+    c.includes('coach') ||
+    c.includes('sports')
+  ) {
+    return 'sports';
+  }
+
+  if (
+    c.includes('เกษตร') ||
+    c.includes('farmer') ||
+    c.includes('ฟาร์ม') ||
+    c.includes('สิ่งแวดล้อม') ||
+    c.includes('พืช') ||
+    c.includes('ประมง')
+  ) {
+    return 'farmer';
+  }
+
+  if (
+    c.includes('ครีเอเตอร์') ||
+    c.includes('youtuber') ||
+    c.includes(' creator') ||
+    c.includes('ช่างภาพ') ||
+    c.includes('ถ่ายภาพ') ||
+    c.includes('ตัดต่อ') ||
+    c.includes('ยูทูปเบอร์') ||
+    c.includes('เกมเมอร์')
+  ) {
+    return 'creator';
+  }
+
+  if (
+    c.includes('การทูต') ||
+    c.includes('นักการทูต') ||
+    c.includes('วิเทศสัมพันธ์') ||
+    c.includes('แปล') ||
+    c.includes('การสื่อสาร') ||
+    c.includes('diplomat')
+  ) {
+    return 'diplomat';
   }
 
   return 'default';
@@ -182,13 +269,15 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
 
   // Size mapping
   const sizeClasses = {
-    sm: 'w-16 h-16',
-    md: 'w-24 h-24',
-    lg: 'w-32 h-32',
-    xl: 'w-40 h-40'
+    xs: 'w-10 h-10',
+    sm: 'w-12 h-12',
+    md: 'w-16 h-16',
+    lg: 'w-24 h-24',
+    xl: 'w-32 h-32'
   };
 
   const badgeSizeClasses = {
+    xs: 'text-[8px] px-1.5 py-0.5',
     sm: 'text-[9px] px-2 py-0.5',
     md: 'text-xs px-2.5 py-1',
     lg: 'text-sm px-3 py-1.5',
@@ -204,8 +293,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#ECFDF5',
       accentColor: '#059669',
       floatingIcons: [
-        <Heart key="1" className="w-4 h-4 text-rose-400 animate-ping absolute -top-1 -right-1" />,
-        <Stethoscope key="2" className="w-5 h-5 text-emerald-200 animate-bounce absolute -bottom-1 -left-1" />
+        <Heart key="1" className="w-3.5 h-3.5 text-rose-400 animate-ping absolute -top-1 -right-1" />,
+        <Stethoscope key="2" className="w-4 h-4 text-emerald-200 animate-bounce absolute -bottom-1 -left-1" />
       ],
       emoji: '🩺',
       badgeBg: 'bg-emerald-500 text-white'
@@ -217,8 +306,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#EFF6FF',
       accentColor: '#2563EB',
       floatingIcons: [
-        <Code2 key="1" className="w-5 h-5 text-amber-300 animate-pulse absolute -top-2 -right-1" />,
-        <Cpu key="2" className="w-4 h-4 text-sky-200 animate-bounce absolute -bottom-1 -left-1" />
+        <Code2 key="1" className="w-4 h-4 text-amber-300 animate-pulse absolute -top-1 -right-1" />,
+        <Cpu key="2" className="w-3.5 h-3.5 text-sky-200 animate-bounce absolute -bottom-1 -left-1" />
       ],
       emoji: '💻',
       badgeBg: 'bg-indigo-600 text-white'
@@ -230,8 +319,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#FFFBEB',
       accentColor: '#B45309',
       floatingIcons: [
-        <GraduationCap key="1" className="w-5 h-5 text-amber-200 animate-bounce absolute -top-2 -left-1" />,
-        <BookOpen key="2" className="w-4 h-4 text-yellow-100 animate-pulse absolute -bottom-1 -right-1" />
+        <GraduationCap key="1" className="w-4 h-4 text-amber-200 animate-bounce absolute -top-1 -left-1" />,
+        <BookOpen key="2" className="w-3.5 h-3.5 text-yellow-100 animate-pulse absolute -bottom-1 -right-1" />
       ],
       emoji: '📖',
       badgeBg: 'bg-amber-500 text-amber-950'
@@ -243,8 +332,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#F5F3FF',
       accentColor: '#7C3AED',
       floatingIcons: [
-        <FlaskConical key="1" className="w-5 h-5 text-pink-300 animate-bounce absolute -top-1 -right-1" />,
-        <Sparkles key="2" className="w-4 h-4 text-purple-200 animate-spin absolute -bottom-1 -left-1" />
+        <FlaskConical key="1" className="w-4 h-4 text-pink-300 animate-bounce absolute -top-1 -right-1" />,
+        <Sparkles key="2" className="w-3.5 h-3.5 text-purple-200 animate-spin absolute -bottom-1 -left-1" />
       ],
       emoji: '🧪',
       badgeBg: 'bg-purple-600 text-white'
@@ -256,8 +345,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#F0F9FF',
       accentColor: '#0369A1',
       floatingIcons: [
-        <Rocket key="1" className="w-5 h-5 text-amber-300 animate-bounce absolute -top-2 -right-1" />,
-        <Briefcase key="2" className="w-4 h-4 text-sky-200 animate-pulse absolute -bottom-1 -left-1" />
+        <Rocket key="1" className="w-4 h-4 text-amber-300 animate-bounce absolute -top-1 -right-1" />,
+        <Briefcase key="2" className="w-3.5 h-3.5 text-sky-200 animate-pulse absolute -bottom-1 -left-1" />
       ],
       emoji: '🚀',
       badgeBg: 'bg-sky-600 text-white'
@@ -269,8 +358,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#EFF6FF',
       accentColor: '#1E40AF',
       floatingIcons: [
-        <Plane key="1" className="w-5 h-5 text-white animate-pulse absolute -top-2 -right-2" />,
-        <Zap key="2" className="w-4 h-4 text-amber-300 animate-bounce absolute -bottom-1 -left-1" />
+        <Plane key="1" className="w-4 h-4 text-white animate-pulse absolute -top-1 -right-1" />,
+        <Zap key="2" className="w-3.5 h-3.5 text-amber-300 animate-bounce absolute -bottom-1 -left-1" />
       ],
       emoji: '✈️',
       badgeBg: 'bg-blue-600 text-white'
@@ -282,8 +371,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#FDF2F8',
       accentColor: '#DB2777',
       floatingIcons: [
-        <Palette key="1" className="w-5 h-5 text-yellow-300 animate-bounce absolute -top-1 -left-1" />,
-        <Sparkles key="2" className="w-4 h-4 text-pink-200 animate-pulse absolute -bottom-1 -right-1" />
+        <Palette key="1" className="w-4 h-4 text-yellow-300 animate-bounce absolute -top-1 -left-1" />,
+        <Sparkles key="2" className="w-3.5 h-3.5 text-pink-200 animate-pulse absolute -bottom-1 -right-1" />
       ],
       emoji: '🎨',
       badgeBg: 'bg-rose-500 text-white'
@@ -295,8 +384,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#FFF7ED',
       accentColor: '#C2410C',
       floatingIcons: [
-        <Utensils key="1" className="w-5 h-5 text-amber-200 animate-bounce absolute -top-2 -right-1" />,
-        <Sparkles key="2" className="w-4 h-4 text-yellow-300 animate-ping absolute -bottom-1 -left-1" />
+        <Utensils key="1" className="w-4 h-4 text-amber-200 animate-bounce absolute -top-1 -right-1" />,
+        <Sparkles key="2" className="w-3.5 h-3.5 text-yellow-300 animate-ping absolute -bottom-1 -left-1" />
       ],
       emoji: '👨‍🍳',
       badgeBg: 'bg-orange-600 text-white'
@@ -308,11 +397,63 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#F8FAFC',
       accentColor: '#1E293B',
       floatingIcons: [
-        <Shield key="1" className="w-5 h-5 text-amber-400 animate-pulse absolute -top-2 -right-1" />,
-        <Award key="2" className="w-4 h-4 text-sky-300 animate-bounce absolute -bottom-1 -left-1" />
+        <Shield key="1" className="w-4 h-4 text-amber-400 animate-pulse absolute -top-1 -right-1" />,
+        <Award key="2" className="w-3.5 h-3.5 text-sky-300 animate-bounce absolute -bottom-1 -left-1" />
       ],
       emoji: '⚖️',
       badgeBg: 'bg-slate-800 text-amber-300'
+    },
+    sports: {
+      title: 'นักกีฬาอาชีพ / โค้ช',
+      bgGradient: 'from-emerald-500 via-teal-600 to-lime-600',
+      hatColor: '#059669',
+      outfitColor: '#ECFDF5',
+      accentColor: '#047857',
+      floatingIcons: [
+        <Trophy key="1" className="w-4 h-4 text-amber-300 animate-bounce absolute -top-1 -right-1" />,
+        <Zap key="2" className="w-3.5 h-3.5 text-emerald-200 animate-pulse absolute -bottom-1 -left-1" />
+      ],
+      emoji: '🏀',
+      badgeBg: 'bg-emerald-600 text-white'
+    },
+    farmer: {
+      title: 'เกษตรกรยุคใหม่ / Smart Farmer',
+      bgGradient: 'from-green-500 via-emerald-600 to-amber-600',
+      hatColor: '#16A34A',
+      outfitColor: '#F0FDF4',
+      accentColor: '#15803D',
+      floatingIcons: [
+        <Sprout key="1" className="w-4 h-4 text-lime-300 animate-pulse absolute -top-1 -right-1" />,
+        <Sparkles key="2" className="w-3.5 h-3.5 text-yellow-200 animate-bounce absolute -bottom-1 -left-1" />
+      ],
+      emoji: '🌾',
+      badgeBg: 'bg-green-600 text-white'
+    },
+    creator: {
+      title: 'คอนเทนต์ครีเอเตอร์ / ช่างภาพ',
+      bgGradient: 'from-purple-500 via-pink-600 to-rose-600',
+      hatColor: '#9333EA',
+      outfitColor: '#FAF5FF',
+      accentColor: '#7E22CE',
+      floatingIcons: [
+        <Video key="1" className="w-4 h-4 text-pink-300 animate-bounce absolute -top-1 -right-1" />,
+        <Sparkles key="2" className="w-3.5 h-3.5 text-yellow-300 animate-pulse absolute -bottom-1 -left-1" />
+      ],
+      emoji: '🎥',
+      badgeBg: 'bg-purple-600 text-white'
+    },
+    diplomat: {
+      title: 'นักการทูต / การสื่อสารต่างประเทศ',
+      bgGradient: 'from-cyan-500 via-blue-600 to-indigo-700',
+      hatColor: '#0891B2',
+      outfitColor: '#ECFEFF',
+      accentColor: '#0E7490',
+      floatingIcons: [
+        <Globe key="1" className="w-4 h-4 text-sky-200 animate-spin absolute -top-1 -right-1" />,
+        <Award key="2" className="w-3.5 h-3.5 text-amber-300 animate-bounce absolute -bottom-1 -left-1" />
+      ],
+      emoji: '🌐',
+      badgeBg: 'bg-cyan-600 text-white'
     },
     default: {
       title: 'ผู้นำมุสลิมรุ่นใหม่ (Khalifah Leader)',
@@ -321,8 +462,8 @@ export const AnimatedCareerAvatar: React.FC<AnimatedCareerAvatarProps> = ({
       outfitColor: '#F0FDFA',
       accentColor: '#0F766E',
       floatingIcons: [
-        <Sparkles key="1" className="w-5 h-5 text-amber-300 animate-spin absolute -top-2 -right-1" />,
-        <Award key="2" className="w-4 h-4 text-teal-200 animate-bounce absolute -bottom-1 -left-1" />
+        <Sparkles key="1" className="w-4 h-4 text-amber-300 animate-spin absolute -top-1 -right-1" />,
+        <Award key="2" className="w-3.5 h-3.5 text-teal-200 animate-bounce absolute -bottom-1 -left-1" />
       ],
       emoji: '🌟',
       badgeBg: 'bg-teal-600 text-white'

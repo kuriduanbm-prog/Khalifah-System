@@ -19,7 +19,7 @@ import {
   Briefcase,
   Sparkles
 } from 'lucide-react';
-import { AnimatedCareerAvatar } from '../common/AnimatedCareerAvatar';
+import { AnimatedCareerAvatar, CAREER_PRESETS } from '../common/AnimatedCareerAvatar';
 
 export const MyAccountView: React.FC = () => {
   const {
@@ -273,28 +273,46 @@ export const MyAccountView: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               {/* Highlighted Future Career Field with Animated Cartoon Preview */}
-              <div className="sm:col-span-2 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 p-4 rounded-2xl border border-amber-500/30 shadow-xs space-y-3">
+              <div className="sm:col-span-2 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-teal-500/10 p-3.5 rounded-2xl border border-amber-500/30 shadow-xs space-y-2.5">
                 <label className="block font-extrabold text-slate-800 dark:text-slate-100 flex items-center justify-between text-xs sm:text-sm">
                   <span className="flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-amber-500" />
                     <span>อาชีพในอนาคต (Future Career / เป้าหมายในชีวิต)</span>
                   </span>
                   <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold bg-amber-400/20 px-2 py-0.5 rounded-full">
-                    การ์ตูนเคลื่อนไหวตามอาชีพ 🎨
+                    การ์ตูนเคลื่อนไหว 🎨
                   </span>
                 </label>
                 <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="w-full sm:flex-1">
+                  <div className="w-full sm:flex-1 space-y-2">
                     <input
                       type="text"
                       value={profileForm.futureCareer}
                       onChange={(e) => setProfileForm({ ...profileForm, futureCareer: e.target.value })}
-                      placeholder="เช่น แพทย์, วิศวกร, ครู/อาจารย์, พายัพ/โปรแกรมเมอร์, นักธุรกิจ, เชฟ ฯลฯ"
-                      className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-800 border border-amber-400/50 dark:border-amber-500/50 rounded-xl text-xs sm:text-sm font-black outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100 shadow-inner"
+                      placeholder="พิมพ์อาชีพที่ต้องการ หรือคลิกเลือกจากรายการตัวอย่างด้านล่าง..."
+                      className="w-full px-3.5 py-2 bg-white dark:bg-slate-800 border border-amber-400/50 dark:border-amber-500/50 rounded-xl text-xs sm:text-sm font-black outline-none focus:ring-2 focus:ring-amber-500 text-slate-900 dark:text-slate-100 shadow-inner"
                     />
+
+                    {/* Quick Preset Choice Chips */}
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {CAREER_PRESETS.map((preset) => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => setProfileForm({ ...profileForm, futureCareer: preset.value })}
+                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer font-bold ${
+                            profileForm.futureCareer === preset.value
+                              ? 'bg-amber-500 text-amber-950 border-amber-600 font-black shadow-xs'
+                              : 'bg-white/80 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-amber-100 dark:hover:bg-amber-950/50'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="shrink-0 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm flex items-center gap-2">
-                    <AnimatedCareerAvatar career={profileForm.futureCareer} size="md" showBadge={false} />
+                  <div className="shrink-0 bg-white dark:bg-slate-800 p-1 rounded-xl border border-amber-200 dark:border-amber-800 shadow-sm flex items-center justify-center">
+                    <AnimatedCareerAvatar career={profileForm.futureCareer} size="sm" showBadge={false} />
                   </div>
                 </div>
               </div>
