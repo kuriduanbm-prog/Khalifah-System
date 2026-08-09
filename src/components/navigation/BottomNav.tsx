@@ -34,9 +34,8 @@ export const BottomNav: React.FC = () => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   const studentNavs = [
-    { id: 'schedule', label: 'ตารางเรียน', icon: CalendarDays },
     { id: 'profile', label: 'ผลการเรียน', icon: GraduationCap },
-    { id: 'student_checkin', label: 'เช็คละหมาด', icon: Camera, isProminent: true },
+    { id: 'schedule', label: 'ตารางเรียน', icon: CalendarDays },
     { id: 'my_account', label: 'ฉัน', icon: User },
   ];
 

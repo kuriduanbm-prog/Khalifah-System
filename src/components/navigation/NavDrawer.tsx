@@ -26,15 +26,15 @@ export const NAV_ITEMS = [
   { id: 'halaqah', label: 'บันทึกหะละเกาะฮ์', icon: BookOpenCheck },
   { id: 'discipline', label: 'บันทึกวินัย/พฤติกรรม', icon: ShieldAlert },
   { id: 'reports', label: 'รายงานและสถิติ', icon: FileBarChart },
-  { id: 'profile', label: 'ดูผลการเรียน', icon: GraduationCap },
-  { id: 'my_account', label: 'ฉัน (โปรไฟล์/รหัสผ่าน)', icon: User },
+  { id: 'profile', label: 'ผลการเรียน', icon: GraduationCap },
+  { id: 'my_account', label: 'ฉัน', icon: User },
   { id: 'settings', label: 'ตั้งค่าระบบ', icon: Settings },
 ];
 
 export const NavDrawer: React.FC = () => {
   const { activeTab, setActiveTab, currentUser, unsyncedCount, isAdmin, isTeacher, isStudent } = useApp();
 
-  const studentNavOrder = ['schedule', 'profile', 'student_checkin', 'my_account'];
+  const studentNavOrder = ['profile', 'schedule', 'my_account'];
 
   let filteredNavItems = NAV_ITEMS.filter((item) => {
     if (isStudent) {

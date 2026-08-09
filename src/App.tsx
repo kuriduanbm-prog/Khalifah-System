@@ -5,6 +5,7 @@ import { NavDrawer } from './components/navigation/NavDrawer';
 import { BottomNav } from './components/navigation/BottomNav';
 import { SnackbarContainer } from './components/common/SnackbarContainer';
 import { ConfirmDialogModal } from './components/common/ConfirmDialogModal';
+import { FloatingPrayerCheckinButton } from './components/common/FloatingPrayerCheckinButton';
 
 import { DashboardView } from './components/views/DashboardView';
 import { StudentManagementView } from './components/views/StudentManagementView';
@@ -88,6 +89,7 @@ function MainContent() {
       <BottomNav />
 
       {/* Common Floating UI Elements */}
+      <FloatingPrayerCheckinButton />
       <SnackbarContainer />
       <ConfirmDialogModal />
     </div>

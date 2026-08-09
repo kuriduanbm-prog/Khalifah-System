@@ -78,6 +78,23 @@ export const StudentProfileView: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12 animate-fade-in max-w-5xl mx-auto print:p-0 print:space-y-2">
+      {/* Page Title Badge */}
+      <div className="print:hidden flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2.5 bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 rounded-2xl shadow-xs">
+            <GraduationCap className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              ผลการเรียน & สถิติความประพฤติ
+            </h1>
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              สรุปผลการเรียน คะแนนพฤติกรรม และสถิติการเข้าชั้นเรียน
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Printable Header for Print view */}
       <div className="hidden print:block text-center mb-6">
         <h1 className="text-xl font-bold">{orgSettings.programName}</h1>

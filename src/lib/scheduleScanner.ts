@@ -2,7 +2,7 @@ import { createWorker } from 'tesseract.js';
 
 export interface ScannedSlot {
   id: string;
-  day: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์';
+  day: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์';
   time: string;
   subjectCode: string;
   subjectName: string;
@@ -55,7 +55,14 @@ export async function scanScheduleImageOffline(
   imageUrl: string,
   onProgress?: (progressPercent: number, statusText: string) => void
 ): Promise<ScannedSlot[]> {
-  const days: ('จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์')[] = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'];
+  const days: ('อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์')[] = [
+    'อาทิตย์',
+    'จันทร์',
+    'อังคาร',
+    'พุธ',
+    'พฤหัสบดี',
+    'ศุกร์'
+  ];
   let extractedText = '';
 
   try {
@@ -84,12 +91,13 @@ export async function scanScheduleImageOffline(
   const slots: ScannedSlot[] = [];
   const lines = extractedText.split('\n').map((l) => l.trim()).filter(Boolean);
 
-  let currentDay: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์' = 'จันทร์';
+  let currentDay: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์' = 'อาทิตย์';
   let timeIdx = 0;
 
   for (const line of lines) {
     // Check day match
-    if (line.includes('จันทร์') || line.includes('Mon')) currentDay = 'จันทร์';
+    if (line.includes('อาทิตย์') || line.includes('Sun')) currentDay = 'อาทิตย์';
+    else if (line.includes('จันทร์') || line.includes('Mon')) currentDay = 'จันทร์';
     else if (line.includes('อังคาร') || line.includes('Tue')) currentDay = 'อังคาร';
     else if (line.includes('พุธ') || line.includes('Wed')) currentDay = 'พุธ';
     else if (line.includes('พฤหัส') || line.includes('Thu')) currentDay = 'พฤหัสบดี';

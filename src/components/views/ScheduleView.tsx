@@ -36,7 +36,7 @@ import {
 
 interface ScheduleSlot {
   id: string;
-  day: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์';
+  day: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์';
   time: string; // e.g. '08:30 - 09:30'
   subjectCode: string;
   subjectName: string;
@@ -56,6 +56,7 @@ interface ScheduleImage {
 
 const INITIAL_SCHEDULES: Record<string, ScheduleSlot[]> = {
   'ม.1': [
+    { id: 'm1-sun-1', day: 'อาทิตย์', time: '08:30 - 10:30', subjectCode: 'อส11100', subjectName: 'ทบทวนอัลกุรอานเเละความรู้ศาสนา', teacher: 'อ.ซูไฮมี มะเซ็ง', room: 'ห้อง 101', color: 'bg-red-500' },
     { id: 'm1-1', day: 'จันทร์', time: '08:30 - 09:30', subjectCode: 'อส11101', subjectName: 'อัลกุรอานเเละอัลฮะดีษ 1', teacher: 'อ.ซูไฮมี มะเซ็ง', room: 'ห้อง 101', color: 'bg-emerald-500' },
     { id: 'm1-2', day: 'จันทร์', time: '09:30 - 10:30', subjectCode: 'ค11101', subjectName: 'คณิตศาสตร์พื้นฐาน', teacher: 'อ.อับดุลเลาะห์', room: 'ห้อง 101', color: 'bg-indigo-500' },
     { id: 'm1-3', day: 'จันทร์', time: '10:30 - 11:30', subjectCode: 'ว11101', subjectName: 'วิทยาศาสตร์พื้นฐาน', teacher: 'ดร.ฟารีดะฮ์', room: 'ห้องแล็บ 1', color: 'bg-sky-500' },
@@ -92,6 +93,10 @@ const INITIAL_SCHEDULES: Record<string, ScheduleSlot[]> = {
     { id: 'm4-6', day: 'ศุกร์', time: '08:30 - 10:30', subjectCode: 'ภ31101', subjectName: 'ภาษาอาหรับเพื่อการสื่อสาร', teacher: 'อ.อุสมาน', room: 'ห้อง 401', color: 'bg-teal-600' },
   ],
   'ม.5': [
+    // วันอาทิตย์
+    { id: 'sun-m5-1', day: 'อาทิตย์', time: '08:30 - 10:30', subjectCode: 'อส32100', subjectName: 'กิรออาฮ์เเละตัจวีด (การอ่านอัลกุรอาน)', teacher: 'อ.ซูไฮมี มะเซ็ง', room: 'ห้อง 301', color: 'bg-rose-500' },
+    { id: 'sun-m5-2', day: 'อาทิตย์', time: '10:30 - 11:30', subjectCode: 'HLQ-SUN', subjectName: 'หะละเกาะฮ์อัลกุรอานยามเช้า', teacher: 'ครูหอพักประจำกลุ่ม', room: 'ลานหะละเกาะฮ์', color: 'bg-purple-600' },
+
     // วันจันทร์
     { id: '1', day: 'จันทร์', time: '08:30 - 09:30', subjectCode: 'อส32101', subjectName: 'อัลกุรอานเเละอัลฮะดีษ 3', teacher: 'อ.ซูไฮมี มะเซ็ง', room: 'ห้อง 301', color: 'bg-emerald-500' },
     { id: '2', day: 'จันทร์', time: '09:30 - 10:30', subjectCode: 'ว32202', subjectName: 'วิทยาการคำนวณและ AI', teacher: 'ดร.ฟารีดะฮ์', room: 'ห้องคอมฯ 2', color: 'bg-sky-500' },
@@ -173,7 +178,7 @@ export const ScheduleView: React.FC = () => {
       setSelectedYear(defaultYear);
     }
   }, [isStudent, defaultYear]);
-  const [selectedDay, setSelectedDay] = useState<'ทั้งหมด' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์'>('ทั้งหมด');
+  const [selectedDay, setSelectedDay] = useState<'ทั้งหมด' | 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์'>('ทั้งหมด');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Stateful schedule data with localStorage persistence
@@ -194,7 +199,7 @@ export const ScheduleView: React.FC = () => {
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<ScheduleSlot | null>(null);
   const [slotForm, setSlotForm] = useState<{
-    day: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์';
+    day: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์';
     time: string;
     subjectCode: string;
     subjectName: string;
@@ -203,7 +208,7 @@ export const ScheduleView: React.FC = () => {
     color: string;
     targetYear: string;
   }>({
-    day: 'จันทร์',
+    day: 'อาทิตย์',
     time: '08:30 - 09:30',
     subjectCode: '',
     subjectName: '',
@@ -375,8 +380,10 @@ export const ScheduleView: React.FC = () => {
 
           if (cleanCols.length >= 4) {
             const rawDay = cleanCols[0];
-            let day: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์' = 'จันทร์';
-            if (rawDay.includes('อังคาร') || rawDay.includes('Tue')) day = 'อังคาร';
+            let day: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์' = 'อาทิตย์';
+            if (rawDay.includes('อาทิตย์') || rawDay.includes('Sun')) day = 'อาทิตย์';
+            else if (rawDay.includes('จันทร์') || rawDay.includes('Mon')) day = 'จันทร์';
+            else if (rawDay.includes('อังคาร') || rawDay.includes('Tue')) day = 'อังคาร';
             else if (rawDay.includes('พุธ') || rawDay.includes('Wed')) day = 'พุธ';
             else if (rawDay.includes('พฤหัส') || rawDay.includes('Thu')) day = 'พฤหัสบดี';
             else if (rawDay.includes('ศุกร์') || rawDay.includes('Fri')) day = 'ศุกร์';
@@ -487,7 +494,7 @@ export const ScheduleView: React.FC = () => {
     });
   };
 
-  const handleAddScannedSlotDay = (day: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์') => {
+  const handleAddScannedSlotDay = (day: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์') => {
     const newSlot: ScannedSlot = {
       id: `new-scan-${Date.now()}-${Math.random().toString(36).substring(2, 5)}`,
       day,
@@ -599,10 +606,10 @@ export const ScheduleView: React.FC = () => {
   };
 
   // Open modal to add new slot
-  const handleOpenAddSlotModal = (day?: 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์') => {
+  const handleOpenAddSlotModal = (day?: 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์') => {
     setEditingSlot(null);
     setSlotForm({
-      day: day || (selectedDay !== 'ทั้งหมด' ? selectedDay : 'จันทร์'),
+      day: day || (selectedDay !== 'ทั้งหมด' ? selectedDay : 'อาทิตย์'),
       time: '08:30 - 09:30',
       subjectCode: '',
       subjectName: '',
@@ -729,18 +736,26 @@ export const ScheduleView: React.FC = () => {
 
   // Determine current day of week in Thai
   const currentDayIndex = new Date().getDay(); // 0=Sun, 1=Mon...
-  const dayNames: Record<number, 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์' | null> = {
+  const dayNames: Record<number, 'อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์' | null> = {
+    0: 'อาทิตย์',
     1: 'จันทร์',
     2: 'อังคาร',
     3: 'พุธ',
     4: 'พฤหัสบดี',
     5: 'ศุกร์'
   };
-  const todayThai = dayNames[currentDayIndex] || 'จันทร์';
+  const todayThai = dayNames[currentDayIndex] || 'อาทิตย์';
 
   const scheduleList = allSchedules[selectedYear] || [];
 
-  const daysList: ('จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์')[] = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'];
+  const daysList: ('อาทิตย์' | 'จันทร์' | 'อังคาร' | 'พุธ' | 'พฤหัสบดี' | 'ศุกร์')[] = [
+    'อาทิตย์',
+    'จันทร์',
+    'อังคาร',
+    'พุธ',
+    'พฤหัสบดี',
+    'ศุกร์'
+  ];
 
   const filteredSlots = scheduleList.filter((slot) => {
     const matchDay = selectedDay === 'ทั้งหมด' || slot.day === selectedDay;
@@ -758,6 +773,7 @@ export const ScheduleView: React.FC = () => {
 
   const getDayBadgeColor = (day: string) => {
     switch (day) {
+      case 'อาทิตย์': return 'from-red-500 to-rose-600 text-white';
       case 'จันทร์': return 'from-amber-400 to-yellow-500 text-amber-950';
       case 'อังคาร': return 'from-pink-500 to-rose-500 text-white';
       case 'พุธ': return 'from-emerald-500 to-teal-600 text-white';
@@ -863,10 +879,10 @@ export const ScheduleView: React.FC = () => {
       </div>
 
       {/* Filter and Day Selector Toolbar */}
-      {!isStudent && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-            {/* Class Grade Selector Tabs */}
+      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Class Grade Selector Tabs / Student Grade Badge */}
+          {!isStudent ? (
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap mr-1">
                 ระดับชั้น:
@@ -892,58 +908,67 @@ export const ScheduleView: React.FC = () => {
                 );
               })}
             </div>
-
-            {/* Search Box */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="ค้นหาวิชา, รหัสวิชา, ครูผู้สอน หรือห้องเรียน..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500"
-              />
+          ) : (
+            <div className="flex items-center gap-2 py-0.5">
+              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                ตารางเรียนนักเรียน:
+              </span>
+              <span className="px-3 py-1 bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-xs">
+                ระดับชั้น {selectedYear}
+              </span>
             </div>
-          </div>
+          )}
 
-          {/* Day Tabs */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none border-t border-slate-100 dark:border-slate-800">
-            <button
-              onClick={() => setSelectedDay('ทั้งหมด')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all ${
-                selectedDay === 'ทั้งหมด'
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
-              }`}
-            >
-              ทั้งหมด (จ.-ศ.)
-            </button>
-
-            {daysList.map((day) => {
-              const isToday = day === todayThai;
-              const isSelected = selectedDay === day;
-              return (
-                <button
-                  key={day}
-                  onClick={() => setSelectedDay(day)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 ${
-                    isSelected
-                      ? `bg-gradient-to-r ${getDayBadgeColor(day)} shadow-xs ring-2 ring-sky-400/40`
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
-                  }`}
-                >
-                  <span>วัน{day}</span>
-                  {isToday && (
-                    <span className="text-[9px] bg-white/30 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 rounded-full font-extrabold">
-                      วันนี้
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          {/* Search Box */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              placeholder="ค้นหาวิชา, รหัสวิชา, ครูผู้สอน หรือห้องเรียน..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-sky-500"
+            />
           </div>
         </div>
-      )}
+
+        {/* Day Tabs */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none border-t border-slate-100 dark:border-slate-800">
+          <button
+            onClick={() => setSelectedDay('ทั้งหมด')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all ${
+              selectedDay === 'ทั้งหมด'
+                ? 'bg-sky-600 text-white shadow-xs'
+                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+            }`}
+          >
+            ทั้งหมด (อา.-ศ.)
+          </button>
+
+          {daysList.map((day) => {
+            const isToday = day === todayThai;
+            const isSelected = selectedDay === day;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(day)}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 ${
+                  isSelected
+                    ? `bg-gradient-to-r ${getDayBadgeColor(day)} shadow-xs ring-2 ring-sky-400/40`
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                }`}
+              >
+                <span>วัน{day}</span>
+                {isToday && (
+                  <span className="text-[9px] bg-white/30 text-amber-900 dark:text-amber-200 px-1.5 py-0.2 rounded-full font-extrabold">
+                    วันนี้
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Uploaded Schedule Images Section */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
@@ -1695,6 +1720,7 @@ export const ScheduleView: React.FC = () => {
                     onChange={(e) => setSlotForm({ ...slotForm, day: e.target.value as any })}
                     className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-sky-500"
                   >
+                    <option value="อาทิตย์">วันอาทิตย์</option>
                     <option value="จันทร์">วันจันทร์</option>
                     <option value="อังคาร">วันอังคาร</option>
                     <option value="พุธ">วันพุธ</option>
@@ -1945,7 +1971,7 @@ export const ScheduleView: React.FC = () => {
 
             {/* Modal Body - Scanned Slots List grouped by Day */}
             <div className="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1 bg-slate-50/50 dark:bg-slate-950/50">
-              {(['จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'] as const).map((dayName) => {
+              {(['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์'] as const).map((dayName) => {
                 const daySlots = scannedSlotsResult.filter((s) => s.day === dayName);
 
                 return (
