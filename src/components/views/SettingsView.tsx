@@ -118,6 +118,7 @@ export const SettingsView: React.FC = () => {
 
   // Google Apps Script Connection Test & Setup Guide State
   const [isTestingApi, setIsTestingApi] = useState(false);
+  const [isSyncingLogo, setIsSyncingLogo] = useState(false);
   const [apiTestResult, setApiTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -726,9 +727,64 @@ function updateSummaryTimestamp(ss) {
     }
   };
 
-  const handleSaveOrg = (e: React.FormEvent) => {
+  const handleSaveOrg = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateOrgSettings(orgForm);
+    setIsSyncingLogo(true);
+    try {
+      showSnackbar('กำลังบันทึกการตั้งค่าองค์กรและซิงค์โลโก้...', 'info');
+      let targetLogoUrl = orgForm.logoUrl;
+
+      // If logo is local Base64, upload to Google Drive first to get direct URL
+      if (orgForm.apiUrl && targetLogoUrl && targetLogoUrl.startsWith('data:image/')) {
+        const uploadRes = await uploadLogoToGoogleDrive(orgForm.apiUrl, targetLogoUrl, 'khalifah_system_logo.png');
+        if (uploadRes.success && uploadRes.url) {
+          targetLogoUrl = uploadRes.url;
+          setOrgForm((prev) => ({ ...prev, logoUrl: uploadRes.url }));
+        }
+      }
+
+      const updatedForm = { ...orgForm, logoUrl: targetLogoUrl };
+      await updateOrgSettings(updatedForm);
+    } catch (err: any) {
+      console.error('Error saving org settings:', err);
+      showSnackbar('เกิดข้อผิดพลาดในการบันทึกข้อมูล โปรดลองอีกครั้ง', 'error');
+    } finally {
+      setIsSyncingLogo(false);
+    }
+  };
+
+  const handleForceSyncLogoAndOrg = async () => {
+    if (!orgForm.apiUrl) {
+      showSnackbar('โปรดกรอก Google Apps Script Web App URL ก่อนซิงค์ข้อมูล', 'warning');
+      return;
+    }
+    setIsSyncingLogo(true);
+    try {
+      showSnackbar('กำลังส่งข้อมูลการตั้งค่าและโลโก้ไปยัง Google Sheet...', 'info');
+      let targetLogoUrl = orgForm.logoUrl;
+
+      if (targetLogoUrl && targetLogoUrl.startsWith('data:image/')) {
+        const uploadRes = await uploadLogoToGoogleDrive(orgForm.apiUrl, targetLogoUrl, 'khalifah_system_logo.png');
+        if (uploadRes.success && uploadRes.url) {
+          targetLogoUrl = uploadRes.url;
+          setOrgForm((prev) => ({ ...prev, logoUrl: uploadRes.url }));
+        }
+      }
+
+      const updatedForm = { ...orgForm, logoUrl: targetLogoUrl };
+      const res = await postOrgSettingsToGoogleScript(orgForm.apiUrl, updatedForm);
+      if (res.success) {
+        await updateOrgSettings(updatedForm);
+        showSnackbar('ซิงค์ข้อมูลองค์กรและบันทึกโลโก้ลง Google Sheet [การตั้งค่าระบบ] ช่อง B6 สำเร็จเรียบร้อยแล้ว!', 'success');
+      } else {
+        showSnackbar(res.message || 'ไม่สามารถซิงค์ข้อมูลไปยัง Google Sheet ได้', 'error');
+      }
+    } catch (err: any) {
+      console.error('Error in force sync logo:', err);
+      showSnackbar('เกิดข้อผิดพลาดในการซิงค์ข้อมูลไปยัง Google Sheet', 'error');
+    } finally {
+      setIsSyncingLogo(false);
+    }
   };
 
   const handleSaveRules = (e: React.FormEvent) => {
@@ -773,7 +829,7 @@ function updateSummaryTimestamp(ss) {
     });
   };
 
-  // Image File Upload Handler (Direct Embedding into System & LocalStorage)
+  // Image File Upload Handler (Direct Embedding into System & Google Drive / Sheet Sync)
   const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -784,33 +840,40 @@ function updateSummaryTimestamp(ss) {
     }
 
     try {
-      showSnackbar('กำลังฝังรูปภาพโลโก้ลงในระบบ...', 'info');
+      setIsSyncingLogo(true);
+      showSnackbar('กำลังประมวลผลรูปภาพโลโก้...', 'info');
       const embeddedBase64 = await resizeImageToBase64(file, 350, 350);
 
-      // 1. Set form state
-      setOrgForm((prev) => ({ ...prev, logoUrl: embeddedBase64 }));
+      let finalLogoUrl = embeddedBase64;
 
-      // 2. Update system org settings state & save to LocalStorage directly
-      const newSettings = { ...orgForm, logoUrl: embeddedBase64 };
-      updateOrgSettings(newSettings);
-
-      // 3. Asynchronously post to Google Apps Script if URL configured (non-blocking background save)
       if (orgForm.apiUrl) {
-        postOrgSettingsToGoogleScript(orgForm.apiUrl, newSettings).catch((err) =>
-          console.warn('Background sync org settings warning:', err)
-        );
+        showSnackbar('กำลังอัปโหลดโลโก้ไปยัง Google Drive และบันทึกลง Google Sheet...', 'info');
+        const uploadRes = await uploadLogoToGoogleDrive(orgForm.apiUrl, embeddedBase64, `khalifah_logo_${Date.now()}.png`);
+        if (uploadRes.success && uploadRes.url) {
+          finalLogoUrl = uploadRes.url;
+          showSnackbar('อัปโหลดโลโก้ขึ้น Google Drive และลง Google Sheet [การตั้งค่าระบบ] ช่อง B6 เรียบร้อยแล้ว!', 'success');
+        } else {
+          showSnackbar('บันทึกรูปภาพในระบบเรียบร้อยแล้ว (จะอัปเดตลง Google Sheet เมื่อเชื่อมต่อสำเร็จ)', 'info');
+        }
+      } else {
+        showSnackbar('ฝังรูปภาพโลโก้เข้าสู่ระบบเรียบร้อยแล้ว! (ยังไม่ได้ระบุ Web App URL)', 'info');
       }
 
-      showSnackbar('ฝังรูปภาพโลโก้เข้าสู่ระบบเรียบร้อยแล้ว! โลโก้จะแสดงผลทันทีโดยไม่ต้องรอซิงค์', 'success');
+      const newSettings = { ...orgForm, logoUrl: finalLogoUrl };
+      setOrgForm(newSettings);
+      updateOrgSettings(newSettings);
     } catch (err) {
       console.error('Error embedding logo:', err);
       showSnackbar('ไม่สามารถประมวลผลไฟล์รูปภาพได้ โปรดลองอีกครั้ง', 'error');
+    } finally {
+      setIsSyncingLogo(false);
     }
   };
 
-  const handleClearLogo = () => {
-    setOrgForm((prev) => ({ ...prev, logoUrl: '' }));
-    updateOrgSettings({ ...orgForm, logoUrl: '' });
+  const handleClearLogo = async () => {
+    const newSettings = { ...orgForm, logoUrl: '' };
+    setOrgForm(newSettings);
+    await updateOrgSettings(newSettings);
     showSnackbar('ลบรูปภาพโลโก้ออกเรียบร้อยแล้ว ระบบจะแสดงไอคอนค่าเริ่มต้น', 'info');
   };
 
@@ -937,16 +1000,27 @@ function updateSummaryTimestamp(ss) {
                 รูปภาพนี้จะปรากฏในส่วนหัวของระบบ, ไอคอนขนาดเล็กบนแท็บเบราว์เซอร์ และแสดงเป็นรูปตัวอย่างเมื่อแชร์ลิงก์ให้ผู้อื่น
               </p>
             </div>
-            {orgForm.logoUrl && (
+            <div className="flex items-center gap-2 self-start sm:self-auto">
               <button
                 type="button"
-                onClick={handleClearLogo}
-                className="self-start sm:self-auto px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 hover:bg-rose-100 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 border border-rose-200 dark:border-rose-900"
+                onClick={handleForceSyncLogoAndOrg}
+                disabled={isSyncingLogo}
+                className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>รีเซ็ตเป็นโลโก้เริ่มต้น</span>
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingLogo ? 'animate-spin' : ''}`} />
+                <span>{isSyncingLogo ? 'กำลังซิงค์ Google Drive...' : 'ซิงค์โลโก้ลง Google Sheet B6'}</span>
               </button>
-            )}
+              {orgForm.logoUrl && (
+                <button
+                  type="button"
+                  onClick={handleClearLogo}
+                  className="px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 hover:bg-rose-100 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 border border-rose-200 dark:border-rose-900 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>รีเซ็ต</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Real-time Visual Previews (System Header, Browser Tab, Social Card) */}
@@ -1356,13 +1430,30 @@ function updateSummaryTimestamp(ss) {
           )}
         </div>
 
-        <button
-          type="submit"
-          className="px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-amber-300 font-bold rounded-2xl text-xs shadow-md transition-all flex items-center gap-2"
-        >
-          <Save className="w-4 h-4" />
-          <span>บันทึกการตั้งค่าองค์กรและโลโก้</span>
-        </button>
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+          <button
+            type="submit"
+            disabled={isSyncingLogo}
+            className="w-full sm:w-auto px-6 py-3 bg-emerald-800 hover:bg-emerald-900 text-amber-300 font-bold rounded-2xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+          >
+            {isSyncingLogo ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span>{isSyncingLogo ? 'กำลังอัปโหลดโลโก้และบันทึก...' : 'บันทึกการตั้งค่าองค์กรและซิงค์โลโก้ลง Google Sheet'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleForceSyncLogoAndOrg}
+            disabled={isSyncingLogo}
+            className="w-full sm:w-auto px-4 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingLogo ? 'animate-spin' : ''}`} />
+            <span>ซิงค์เฉพาะโลโก้ลง Google Drive / Sheet (B6)</span>
+          </button>
+        </div>
       </form>
 
       {/* 2. Admin User Account Management Section */}

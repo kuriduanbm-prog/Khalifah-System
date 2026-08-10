@@ -23,7 +23,8 @@ import {
   fetchStudentsFromGoogleScript,
   fetchRecordsFromGoogleScript,
   fetchUsersFromGoogleScript,
-  fetchSettingsFromGoogleScript
+  fetchSettingsFromGoogleScript,
+  uploadLogoToGoogleDrive
 } from '../services/api';
 import { updateHeadMetadata } from '../utils/headManager';
 
@@ -477,17 +478,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateOrgSettings = async (newSettings: OrgSettings) => {
-    setOrgSettings(newSettings);
-    if (newSettings.apiUrl && !isOffline) {
-      await postOrgSettingsToGoogleScript(newSettings.apiUrl, {
-        appName: newSettings.appName,
-        programName: newSettings.programName,
-        faculty: newSettings.faculty,
-        university: newSettings.university,
-        logoUrl: newSettings.logoUrl
-      });
+    let finalSettings = { ...newSettings };
+
+    // If logoUrl is a local Base64 string and API URL exists, upload it to Google Drive first
+    if (newSettings.apiUrl && !isOffline && newSettings.logoUrl && newSettings.logoUrl.startsWith('data:image/')) {
+      showSnackbar('กำลังอัปโหลดรูปโลโก้เข้า Google Drive...', 'info');
+      const uploadRes = await uploadLogoToGoogleDrive(newSettings.apiUrl, newSettings.logoUrl, 'khalifah_system_logo.png');
+      if (uploadRes.success && uploadRes.url) {
+        finalSettings.logoUrl = uploadRes.url;
+      }
     }
-    showSnackbar('อัปเดตข้อมูลองค์กรและการเชื่อมต่อ API เรียบร้อย', 'success');
+
+    setOrgSettings(finalSettings);
+
+    if (finalSettings.apiUrl && !isOffline) {
+      const res = await postOrgSettingsToGoogleScript(finalSettings.apiUrl, {
+        appName: finalSettings.appName,
+        programName: finalSettings.programName,
+        faculty: finalSettings.faculty,
+        university: finalSettings.university,
+        logoUrl: finalSettings.logoUrl
+      });
+      if (res.success) {
+        showSnackbar('อัปเดตข้อมูลองค์กรและโลโก้ลง Google Sheet [การตั้งค่าระบบ] ช่อง B6 สำเร็จ!', 'success');
+      } else {
+        showSnackbar('อัปเดตในระบบเรียบร้อย (บันทึกออฟไลน์)', 'info');
+      }
+    } else {
+      showSnackbar('อัปเดตข้อมูลองค์กรในระบบเรียบร้อย', 'success');
+    }
   };
 
   // Sync all unsynced records
