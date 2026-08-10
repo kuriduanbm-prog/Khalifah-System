@@ -25,6 +25,7 @@ import {
   fetchUsersFromGoogleScript,
   fetchSettingsFromGoogleScript
 } from '../services/api';
+import { updateHeadMetadata } from '../utils/headManager';
 
 export interface SnackbarMessage {
   id: string;
@@ -194,6 +195,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   useEffect(() => {
     localStorage.setItem('khalifah_org', JSON.stringify(orgSettings));
+    updateHeadMetadata(orgSettings);
   }, [orgSettings]);
 
   useEffect(() => {

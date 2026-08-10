@@ -29,8 +29,54 @@ import {
   FileSpreadsheet,
   ChevronDown,
   ChevronUp,
-  AlertCircle
+  AlertCircle,
+  Globe,
+  Share2,
+  Sparkles,
+  Layout,
+  Eye,
+  Link,
+  GraduationCap
 } from 'lucide-react';
+
+const PRESET_LOGOS = [
+  {
+    id: 'preset-1',
+    name: 'ตราประทับการศึกษา',
+    desc: 'หมวกรับปริญญาและดาวเกียรติยศ',
+    url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=400&q=80'
+  },
+  {
+    id: 'preset-2',
+    name: 'ตราจันทร์เสี้ยวสถาบัน',
+    desc: 'สัญลักษณ์อิสลามิกคอลีฟะห์',
+    url: 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?auto=format&fit=crop&w=400&q=80'
+  },
+  {
+    id: 'preset-3',
+    name: 'ตราโล่และมหาวิทยาลัย',
+    desc: 'โล่เกียรติยศวิชาการ มหาวิทยาลัย',
+    url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=400&q=80'
+  },
+  {
+    id: 'preset-4',
+    name: 'ตราคัมภีร์และแสงปัญญา',
+    desc: 'หนังสือ รัศมีปัญญาความรู้',
+    url: 'https://images.unsplash.com/photo-1609599006353-e629aaabfeae?auto=format&fit=crop&w=400&q=80'
+  },
+  {
+    id: 'preset-5',
+    name: 'ตราเหรียญทองคุณธรรม',
+    desc: 'เหรียญเกียรติยศความประพฤติ',
+    url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80'
+  },
+  {
+    id: 'preset-6',
+    name: 'ตราโดมมัสยิดฟาฏอนี',
+    desc: 'สถาปัตยกรรมมัสยิดฟาฏอนี',
+    url: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?auto=format&fit=crop&w=400&q=80'
+  }
+];
 
 export const SettingsView: React.FC = () => {
   const {
@@ -879,58 +925,194 @@ function updateSummaryTimestamp(ss) {
           <span>ข้อมูลหน่วยงาน และ โลโก้ของระบบ (System Branding)</span>
         </h3>
 
-        {/* Custom Logo Upload Section */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/60 space-y-3">
-          <label className="block text-xs font-bold text-slate-800 dark:text-slate-200">
-            รูปภาพโลโก้ระบบ (จะแสดงเฉพาะรูปโลโก้ที่อัปโหลด หรือแสดงไอคอนการศึกษาระหว่างรอ)
-          </label>
+        {/* Dedicated Logo, Favicon & Social Share Preview Section */}
+        <div className="p-5 bg-gradient-to-br from-slate-50 to-emerald-50/30 dark:from-slate-800/80 dark:to-emerald-950/20 rounded-3xl border border-slate-200 dark:border-slate-700/80 space-y-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-700/80 pb-3">
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>โลโก้ระบบ, แท็บเบราว์เซอร์ (Favicon) & รูปตั้มเนลสำหรับแชร์</span>
+              </h4>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                รูปภาพนี้จะปรากฏในส่วนหัวของระบบ, ไอคอนขนาดเล็กบนแท็บเบราว์เซอร์ และแสดงเป็นรูปตัวอย่างเมื่อแชร์ลิงก์ให้ผู้อื่น
+              </p>
+            </div>
+            {orgForm.logoUrl && (
+              <button
+                type="button"
+                onClick={handleClearLogo}
+                className="self-start sm:self-auto px-3 py-1.5 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 hover:bg-rose-100 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 border border-rose-200 dark:border-rose-900"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>รีเซ็ตเป็นโลโก้เริ่มต้น</span>
+              </button>
+            )}
+          </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            {/* Logo Preview box */}
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
-              <SystemLogo logoUrl={orgForm.logoUrl} size="xl" alt="Preview Logo" />
-              <span className="text-[10px] text-slate-400 font-medium">ตัวอย่างโลโก้</span>
+          {/* Real-time Visual Previews (System Header, Browser Tab, Social Card) */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <Eye className="w-3.5 h-3.5 text-emerald-600" />
+              <span>ตัวอย่างการแสดงผลในจุดต่างๆ (Live Preview)</span>
+            </label>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Preview 1: System Header Logo */}
+              <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <Layout className="w-3 h-3 text-sky-500" /> 1. โลโก้ในระบบ
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 rounded font-semibold">Header Bar</span>
+                </div>
+                <div className="p-2.5 bg-sky-900 text-white rounded-xl flex items-center gap-2.5 shadow-inner">
+                  <SystemLogo logoUrl={orgForm.logoUrl} size="md" glow={true} alt="Header Preview" />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold truncate leading-tight">{orgForm.appName || 'Khalifah System'}</div>
+                    <div className="text-[9px] text-sky-200 truncate">{orgForm.programName || 'โปรแกรมห้องเรียนคอลีฟะห์'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview 2: Browser Tab Favicon */}
+              <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <Globe className="w-3 h-3 text-emerald-500" /> 2. แท็บเบราว์เซอร์
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 rounded font-semibold">Favicon</span>
+                </div>
+                <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-xl flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
+                  <div className="bg-white dark:bg-slate-900 px-2.5 py-1.5 rounded-lg flex items-center gap-2 shadow-sm max-w-full">
+                    <div className="w-4 h-4 shrink-0 rounded overflow-hidden flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                      {orgForm.logoUrl ? (
+                        <img src={orgForm.logoUrl} alt="Favicon" className="w-full h-full object-contain" />
+                      ) : (
+                        <GraduationCap className="w-3 h-3 text-sky-600" />
+                      )}
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-800 dark:text-slate-200 truncate max-w-[110px]">
+                      {orgForm.appName || 'Khalifah System'}
+                    </span>
+                    <X className="w-3 h-3 text-slate-400 shrink-0 ml-auto" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview 3: Social Share Link Thumbnail */}
+              <div className="bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                    <Share2 className="w-3 h-3 text-purple-500" /> 3. ตั้มเนลแชร์ลิงก์
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 rounded font-semibold">Social Preview</span>
+                </div>
+                <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden bg-slate-50 dark:bg-slate-800/80 shadow-sm">
+                  <div className="h-16 w-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden relative">
+                    {orgForm.logoUrl ? (
+                      <img src={orgForm.logoUrl} alt="Social Thumbnail" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">
+                        <GraduationCap className="w-5 h-5 text-sky-600" />
+                        <span>Khalifah System</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+                  </div>
+                  <div className="p-2 space-y-0.5">
+                    <div className="text-[9px] text-slate-400 font-semibold truncate">khalifah-app.ftu.ac.th</div>
+                    <div className="text-[10px] font-bold text-slate-900 dark:text-slate-100 truncate">{orgForm.appName || 'Khalifah System'}</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                      ระบบบันทึกพฤติกรรม เช็คชื่อละหมาด ({orgForm.university || 'มหาวิทยาลัยฟาฏอนี'})
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Upload & Input Controls */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+            {/* Method 1: Upload File */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                <span>วิธีที่ 1: อัปโหลดรูปภาพจากอุปกรณ์</span>
+              </span>
+              <p className="text-[10px] text-slate-500">
+                รองรับไฟล์ PNG, JPG, WEBP ระบบจะฝังรูปภาพลงในระบบทันที ไม่ต้องรออัปโหลดเซิร์ฟเวอร์
+              </p>
+              <label className="cursor-pointer w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-2 shadow-sm text-center">
+                <Upload className="w-4 h-4" />
+                <span>คลิกเลือกรูปภาพเพื่อฝังลงในระบบ</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoFileUpload}
+                  className="hidden"
+                />
+              </label>
             </div>
 
-            <div className="flex-1 space-y-3 w-full">
-              {/* File upload button */}
-              <div className="flex items-center gap-2">
-                <label className="cursor-pointer px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded-xl text-xs transition-colors flex items-center gap-2 shadow-sm">
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>เลือกรูปโลโก้จากอุปกรณ์</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleLogoFileUpload}
-                    className="hidden"
-                  />
-                </label>
+            {/* Method 2: Paste Direct URL */}
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Link className="w-3.5 h-3.5 text-sky-600" />
+                <span>วิธีที่ 2: วาง URL ลิงก์รูปภาพโดยตรง</span>
+              </span>
+              <p className="text-[10px] text-slate-500">
+                หากมีรูปภาพออนไลน์อยู่แล้ว สามารถวางลิงก์ Image URL ที่นี่ได้ทันที
+              </p>
+              <input
+                type="text"
+                placeholder="https://example.com/logo.png"
+                value={orgForm.logoUrl}
+                onChange={(e) => setOrgForm({ ...orgForm, logoUrl: e.target.value })}
+                className="w-full px-3.5 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-slate-100 font-mono"
+              />
+            </div>
+          </div>
 
-                {orgForm.logoUrl && (
+          {/* Method 3: Preset Emblems & Badges */}
+          <div className="space-y-2 pt-2 border-t border-slate-200/80 dark:border-slate-700/80">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                <span>วิธีที่ 3: เลือกโลโก้และตราสัญลักษณ์สำเร็จรูป (Preset Badges)</span>
+              </span>
+              <span className="text-[10px] text-slate-400">คลิกที่ตราสัญลักษณ์เพื่อใช้งานทันที</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5">
+              {PRESET_LOGOS.map((preset) => {
+                const isSelected = orgForm.logoUrl === preset.url;
+                return (
                   <button
+                    key={preset.id}
                     type="button"
-                    onClick={handleClearLogo}
-                    className="px-3 py-2 bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-300 hover:bg-rose-100 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1"
+                    onClick={() => {
+                      setOrgForm({ ...orgForm, logoUrl: preset.url });
+                      updateOrgSettings({ ...orgForm, logoUrl: preset.url });
+                      showSnackbar(`เลือกใช้งานตราสัญลักษณ์ "${preset.name}" เรียบร้อยแล้ว`, 'success');
+                    }}
+                    className={`p-2.5 rounded-2xl border text-left transition-all duration-200 flex flex-col items-center text-center space-y-1.5 ${
+                      isSelected
+                        ? 'bg-emerald-50 dark:bg-emerald-950/80 border-emerald-500 shadow-md ring-2 ring-emerald-500/30'
+                        : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700'
+                    }`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>ลบรูปโลโก้</span>
+                    <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 p-1 flex items-center justify-center border border-slate-200/60 dark:border-slate-700">
+                      <img src={preset.url} alt={preset.name} className="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                        {preset.name}
+                      </div>
+                      <div className="text-[9px] text-slate-400 line-clamp-1 mt-0.5">{preset.desc}</div>
+                    </div>
                   </button>
-                )}
-              </div>
-
-              {/* Direct Image URL input */}
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                  หรือวางที่อยู่รูปภาพ URL ของโลโก้
-                </label>
-                <input
-                  type="text"
-                  placeholder="https://example.com/logo.png"
-                  value={orgForm.logoUrl}
-                  onChange={(e) => setOrgForm({ ...orgForm, logoUrl: e.target.value })}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-slate-100"
-                />
-              </div>
+                );
+              })}
             </div>
           </div>
         </div>
