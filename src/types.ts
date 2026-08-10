@@ -89,6 +89,7 @@ export interface DailyRecord {
   timestamp: string;
   calculatedScoreChange?: number;
   syncedToBackend?: boolean;
+  photoUrl?: string;
 }
 
 export interface ScoreRule {

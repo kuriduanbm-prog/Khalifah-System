@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { SystemLogo } from '../common/SystemLogo';
 import { UserAccount, UserRole } from '../../types';
-import { postUserAccountToGoogleScript } from '../../services/api';
+import { postUserAccountToGoogleScript, uploadLogoToGoogleDrive, postOrgSettingsToGoogleScript } from '../../services/api';
 import {
   Settings,
   Save,
@@ -77,12 +77,19 @@ export const SettingsView: React.FC = () => {
   const [isCopied, setIsCopied] = useState(false);
 
   const googleAppsScriptCode = `/**
- * Khalifah System - Google Apps Script Backend Code
- * แยกแท็บการบันทึก: นักเรียน, ครูผู้สอน, ครูหอพัก, แอดมินหลัก, และประวัติเช็คละหมาด/วินัย
- * พร้อมหน้าสรุปภาพรวมและเมนูเรียกใช้งานสร้างตารางอัตโนมัติ
+ * Khalifah System - Google Apps Script Backend Code (ฉบับสมบูรณ์)
+ * จัดเก็บข้อมูลระบบคอลีฟะห์ครบทุกมิติ:
+ * 1. สรุปภาพรวมระบบ
+ * 2. การตั้งค่าระบบและองค์กร (Org Settings & Score Rules)
+ * 3. นักเรียน (Students)
+ * 4. ครูผู้สอน (Teachers)
+ * 5. ครูหอพัก (Dorm Teachers)
+ * 6. แอดมินหลัก (Admins)
+ * 7. ประวัติเช็คละหมาด หะละเกาะฮ์ วินัย และรูปถ่ายสด (Records)
  */
 
 const SHEET_SUMMARY = 'สรุปภาพรวมระบบ';
+const SHEET_SETTINGS = 'การตั้งค่าระบบ';
 const SHEET_STUDENTS = 'นักเรียน';
 const SHEET_TEACHERS = 'ครูผู้สอน';
 const SHEET_DORM_TEACHERS = 'ครูหอพัก';
@@ -90,7 +97,7 @@ const SHEET_ADMINS = 'แอดมินหลัก';
 const SHEET_RECORDS = 'ประวัติเช็คละหมาดและวินัย';
 
 /**
- * เมนูสร้างตารางอัตโนมัติเมื่อเปิด Google Sheets
+ * เมนูสร้างตารางและซิงค์ข้อมูลอัตโนมัติเมื่อเปิด Google Sheets
  */
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
@@ -101,16 +108,16 @@ function onOpen() {
 }
 
 /**
- * เรียกใช้ฟังก์ชันนี้ใน Apps Script หรือผ่านเมนูด้านบนเพื่อสร้างแท็บและตารางทั้งหมดทันที
+ * เรียกใช้ฟังก์ชันนี้เพื่อสร้างแท็บ หัวตาราง และตั้งค่าระบบทั้งหมดทันที
  */
 function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   initAllSheets(ss);
   
   try {
-    SpreadsheetApp.getUi().alert('✅ สำเร็จ!', 'ระบบได้สร้างแท็บ [สรุปภาพรวมระบบ], [นักเรียน], [ครูผู้สอน], [ครูหอพัก], [แอดมินหลัก], และ [ประวัติเช็คละหมาดและวินัย] พร้อมตารางคำนวณเรียบร้อยแล้ว', SpreadsheetApp.getUi().ButtonSet.OK);
+    SpreadsheetApp.getUi().alert('✅ สำเร็จ!', 'ระบบได้สร้างแท็บ [สรุปภาพรวมระบบ], [การตั้งค่าระบบ], [นักเรียน], [ครูผู้สอน], [ครูหอพัก], [แอดมินหลัก], และ [ประวัติเช็คละหมาดและวินัย] พร้อมโครงสร้างตารางครบถ้วนเรียบร้อยแล้ว!', SpreadsheetApp.getUi().ButtonSet.OK);
   } catch (e) {
-    Logger.log('Setup completed successfully from script editor!');
+    Logger.log('Setup completed successfully from Apps Script editor!');
   }
 }
 
@@ -118,7 +125,7 @@ function refreshSummary() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   updateSummaryTimestamp(ss);
   try {
-    SpreadsheetApp.getUi().alert('อัปเดตข้อมูลสรุปเรียบร้อย');
+    SpreadsheetApp.getUi().alert('อัปเดตข้อมูลสรุปภาพรวมเรียบร้อยแล้ว');
   } catch(e) {}
 }
 
@@ -139,9 +146,134 @@ function doGet(e) {
       .createTextOutput(JSON.stringify({ 
         status: 'ok', 
         message: 'เชื่อมต่อสำเร็จ! แท็บข้อมูลพร้อมใช้งาน (200 OK)',
-        tabs: [SHEET_SUMMARY, SHEET_STUDENTS, SHEET_TEACHERS, SHEET_DORM_TEACHERS, SHEET_ADMINS, SHEET_RECORDS]
+        tabs: [SHEET_SUMMARY, SHEET_SETTINGS, SHEET_STUDENTS, SHEET_TEACHERS, SHEET_DORM_TEACHERS, SHEET_ADMINS, SHEET_RECORDS]
       }))
       .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 1. ดึงข้อมูลรายชื่อนักเรียนทั้งหมด
+  if (action === 'getStudents') {
+    const sheet = ss.getSheetByName(SHEET_STUDENTS);
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = sheet.getDataRange().getValues();
+    const list = [];
+    for (let i = 1; i < data.length; i++) {
+      const r = data[i];
+      if (r[0] && r[1]) {
+        list.push({
+          id: String(r[0]),
+          fullName: String(r[1] || ''),
+          nickname: String(r[2] || ''),
+          year: r[3] || 'ม.5',
+          dorm: String(r[4] || ''),
+          phone: String(r[5] || ''),
+          parentName: String(r[6] || ''),
+          parentPhone: String(r[7] || ''),
+          faculty: String(r[8] || ''),
+          programme: String(r[9] || ''),
+          futureCareer: String(r[10] || ''),
+          initialScore: Number(r[11]) || 100,
+          status: 'ปกติ',
+          photo: String(r[12] || 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=250&q=80'),
+          advisor: String(r[13] || 'อาจารย์ที่ปรึกษา คอลีฟะห์')
+        });
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 2. ดึงประวัติการละหมาด หะละเกาะฮ์ วินัย และรูปถ่ายเช็คสด
+  if (action === 'getRecords') {
+    const sheet = ss.getSheetByName(SHEET_RECORDS);
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = sheet.getDataRange().getValues();
+    const list = [];
+    for (let i = 1; i < data.length; i++) {
+      const r = data[i];
+      if (r[0] && r[1]) {
+        list.push({
+          id: 'rec_' + r[0] + '_' + r[1] + '_' + i,
+          date: String(r[0]),
+          studentId: String(r[1]),
+          studentName: String(r[2] || ''),
+          prayer: {
+            subuh: r[3] || 'Absent',
+            zuhr: r[4] || 'Absent',
+            asr: r[5] || 'Absent',
+            maghrib: r[6] || 'Absent',
+            isha: r[7] || 'Absent'
+          },
+          halaqah: {
+            subuh: r[8] || 'Absent',
+            asr: r[9] || 'Absent',
+            isha: r[10] || 'Absent'
+          },
+          discipline: {
+            lateActivity: r[11] === 'สาย',
+            dress: r[12] === 'ผิดระเบียบ',
+            phone: r[13] === 'ยึด',
+            cleaning: r[14] === 'ขาด'
+          },
+          note: String(r[15] || ''),
+          recorder: String(r[16] || ''),
+          photoUrl: String(r[17] || ''),
+          timestamp: String(r[18] || '')
+        });
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 3. ดึงรายชื่อบุคลากร (ครูผู้สอน, ครูหอพัก, แอดมิน)
+  if (action === 'getUsers') {
+    const users = [];
+    const readSheetUsers = (sheetName, roleName) => {
+      const sh = ss.getSheetByName(sheetName);
+      if (!sh) return;
+      const data = sh.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const r = data[i];
+        if (r[0] && r[1]) {
+          users.push({
+            id: String(r[0]),
+            name: String(r[1] || ''),
+            username: String(r[2] || ''),
+            assignedClassOrDorm: String(r[3] || '-'),
+            phone: String(r[4] || ''),
+            role: roleName,
+            status: String(r[5] || 'ใช้งานปกติ')
+          });
+        }
+      }
+    };
+
+    readSheetUsers(SHEET_TEACHERS, 'อาจารย์');
+    readSheetUsers(SHEET_DORM_TEACHERS, 'ครูหอพัก');
+    readSheetUsers(SHEET_ADMINS, 'Admin');
+
+    return ContentService.createTextOutput(JSON.stringify(users)).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // 4. ดึงข้อมูลการตั้งค่าระบบและโลโก้องค์กร
+  if (action === 'getSettings') {
+    const sheet = ss.getSheetByName(SHEET_SETTINGS);
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify(null)).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = sheet.getDataRange().getValues();
+    const settings = {
+      appName: String(data[1] ? data[1][1] : ''),
+      programName: String(data[2] ? data[2][1] : ''),
+      faculty: String(data[3] ? data[3][1] : ''),
+      university: String(data[4] ? data[4][1] : ''),
+      logoUrl: String(data[5] ? data[5][1] : ''),
+      updatedAt: String(data[6] ? data[6][1] : '')
+    };
+    return ContentService.createTextOutput(JSON.stringify(settings)).setMimeType(ContentService.MimeType.JSON);
   }
   
   return ContentService
@@ -151,32 +283,81 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const contents = e.postData.contents;
-    const data = JSON.parse(contents);
+    let data = {};
+    if (e && e.postData && e.postData.contents) {
+      try {
+        data = JSON.parse(e.postData.contents);
+      } catch (parseErr) {
+        data = e.parameter || {};
+      }
+    } else if (e && e.parameter) {
+      data = e.parameter;
+    }
+
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     initAllSheets(ss);
     
-    // 1. บันทึกข้อมูลนักเรียน (ลงแท็บ 'นักเรียน')
-    if (data.action === 'registerStudent' || (data.action === 'registerUser' && (data.role === 'นักเรียน' || !data.role))) {
+    // 1. บันทึก/อัปเดตข้อมูลนักเรียนและรูปถ่าย (ลงแท็บ 'นักเรียน')
+    if (data.action === 'registerStudent' || data.action === 'updateStudent' || data.action === 'updatePhoto' || (data.action === 'registerUser' && (data.role === 'นักเรียน' || !data.role))) {
       let sheet = ss.getSheetByName(SHEET_STUDENTS);
-      sheet.appendRow([
-        data.id || '',
-        data.fullName || '',
-        data.nickname || '',
-        data.year || '',
-        data.dorm || '',
-        data.phone || '',
-        data.parentName || '',
-        data.parentPhone || '',
-        data.faculty || '',
-        data.programme || '',
-        data.futureCareer || '',
-        data.initialScore || 100,
-        new Date().toLocaleString('th-TH')
-      ]);
+      const studentId = String(data.id || '');
+      const photoUrl = data.photo || data.photoUrl || '';
+      let isUpdated = false;
+
+      // ตรวจสอบว่ามีรหัสนักเรียนเดิมอยู่ในตาราง [นักเรียน] หรือไม่
+      if (studentId) {
+        const rows = sheet.getDataRange().getValues();
+        for (let i = 1; i < rows.length; i++) {
+          if (String(rows[i][0]).trim() === studentId.trim()) {
+            if (data.fullName) sheet.getRange(i + 1, 2).setValue(data.fullName);
+            if (data.nickname) sheet.getRange(i + 1, 3).setValue(data.nickname);
+            if (data.year) sheet.getRange(i + 1, 4).setValue(data.year);
+            if (data.dorm) sheet.getRange(i + 1, 5).setValue(data.dorm);
+            if (data.phone) sheet.getRange(i + 1, 6).setValue(data.phone);
+            if (data.parentName) sheet.getRange(i + 1, 7).setValue(data.parentName);
+            if (data.parentPhone) sheet.getRange(i + 1, 8).setValue(data.parentPhone);
+            if (data.faculty) sheet.getRange(i + 1, 9).setValue(data.faculty);
+            if (data.programme) sheet.getRange(i + 1, 10).setValue(data.programme);
+            if (data.futureCareer) sheet.getRange(i + 1, 11).setValue(data.futureCareer);
+            if (data.initialScore) sheet.getRange(i + 1, 12).setValue(data.initialScore);
+            if (photoUrl) sheet.getRange(i + 1, 13).setValue(photoUrl);
+            if (data.advisor) sheet.getRange(i + 1, 14).setValue(data.advisor);
+            sheet.getRange(i + 1, 15).setValue(new Date().toLocaleString('th-TH'));
+            isUpdated = true;
+            break;
+          }
+        }
+      }
+
+      // หากยังไม่มีในตาราง ให้เพิ่มแถวใหม่
+      if (!isUpdated) {
+        sheet.appendRow([
+          data.id || '',
+          data.fullName || '',
+          data.nickname || '',
+          data.year || '',
+          data.dorm || '',
+          data.phone || '',
+          data.parentName || '',
+          data.parentPhone || '',
+          data.faculty || '',
+          data.programme || '',
+          data.futureCareer || '',
+          data.initialScore || 100,
+          photoUrl,
+          data.advisor || 'อาจารย์ที่ปรึกษา คอลีฟะห์',
+          new Date().toLocaleString('th-TH')
+        ]);
+      }
+
       updateSummaryTimestamp(ss);
       return ContentService
-        .createTextOutput(JSON.stringify({ success: true, message: 'บันทึกข้อมูลลงในแท็บ [นักเรียน] เรียบร้อย' }))
+        .createTextOutput(JSON.stringify({
+          success: true,
+          message: isUpdated
+            ? 'อัปเดตข้อมูลและรูปถ่ายนักเรียนลงแท็บ [นักเรียน] ใน Google Sheet เรียบร้อย'
+            : 'บันทึกข้อมูลนักเรียนลงแท็บ [นักเรียน] ใน Google Sheet เรียบร้อย'
+        }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
@@ -196,7 +377,7 @@ function doPost(e) {
       let sheet = ss.getSheetByName(targetSheetName);
       sheet.appendRow([
         data.id || '',
-        data.fullName || '',
+        data.name || data.fullName || '',
         data.username || '',
         data.assignedClassOrDorm || '-',
         data.phone || '',
@@ -206,35 +387,113 @@ function doPost(e) {
       
       updateSummaryTimestamp(ss);
       return ContentService
-        .createTextOutput(JSON.stringify({ success: true, message: 'บันทึกข้อมูลลงในแท็บ [' + targetSheetName + '] เรียบร้อย' }))
+        .createTextOutput(JSON.stringify({ success: true, message: 'บันทึกข้อมูลผู้ใช้ลงในแท็บ [' + targetSheetName + '] เรียบร้อย' }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
-    // 3. บันทึกผลการละหมาด หะละเกาะฮ์ และวินัย (ลงแท็บ 'ประวัติเช็คละหมาดและวินัย')
+    // 3. บันทึกผลการละหมาด หะละเกาะฮ์ วินัย และรูปถ่ายเช็คละหมาดสด (ลงแท็บ 'ประวัติเช็คละหมาดและวินัย')
     if (data.action === 'saveRecord' || data.action === 'quickCheckin') {
       let sheet = ss.getSheetByName(SHEET_RECORDS);
       const p = data.prayer || {};
       const h = data.halaqah || {};
       const d = data.discipline || {};
       
+      let noteText = data.note || '';
+      const photoLink = data.photoUrl || '';
+
       sheet.appendRow([
         data.date || new Date().toLocaleDateString('th-TH'),
         data.studentId || '',
-        data.name || '',
+        data.studentName || data.name || '',
         p.subuh || '-', p.zuhr || '-', p.asr || '-', p.maghrib || '-', p.isha || '-',
         h.subuh || '-', h.asr || '-', h.isha || '-',
         d.lateActivity ? 'สาย' : 'ปกติ',
         d.dress ? 'ผิดระเบียบ' : 'ปกติ',
         d.phone ? 'ยึด' : 'ปกติ',
         d.cleaning ? 'ขาด' : 'ปกติ',
-        data.note || '',
+        noteText,
         data.recorder || 'ระบบ',
+        photoLink,
         new Date().toLocaleString('th-TH')
       ]);
       
       updateSummaryTimestamp(ss);
       return ContentService
-        .createTextOutput(JSON.stringify({ success: true, message: 'บันทึกข้อมูลลงในแท็บ [ประวัติเช็คละหมาดและวินัย] เรียบร้อย' }))
+        .createTextOutput(JSON.stringify({ success: true, message: 'บันทึกประวัติและรูปถ่ายลงในแท็บ [ประวัติเช็คละหมาดและวินัย] เรียบร้อย' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 4. บันทึกการตั้งค่าองค์กรและระบบ (ลงแท็บ 'การตั้งค่าระบบ')
+    if (data.action === 'saveSettings') {
+      let sheet = ss.getSheetByName(SHEET_SETTINGS);
+      if (sheet) {
+        sheet.getRange('B2').setValue(data.appName || '');
+        sheet.getRange('B3').setValue(data.programName || '');
+        sheet.getRange('B4').setValue(data.faculty || '');
+        sheet.getRange('B5').setValue(data.university || '');
+        sheet.getRange('B6').setValue(data.logoUrl || '');
+        sheet.getRange('B7').setValue(new Date().toLocaleString('th-TH'));
+      }
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true, message: 'บันทึกการตั้งค่าลง Google Sheet เรียบร้อย' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // 5. อัปโหลดรูปภาพ / โลโก้ ไปยัง Google Drive อัตโนมัติ (เปิดสิทธิ์สาธารณะ)
+    if (data.action === 'uploadLogo' || data.action === 'uploadImage' || data.action === 'uploadFile') {
+      let base64Data = data.base64Data || data.file || data.image || '';
+      if (!base64Data) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ success: false, message: 'ไม่พบข้อมูล Base64 ของรูปภาพ' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      let mimeType = 'image/png';
+      if (base64Data.indexOf('data:') === 0 && base64Data.indexOf(';base64,') !== -1) {
+        const parts = base64Data.split(';base64,');
+        mimeType = parts[0].replace('data:', '');
+        base64Data = parts[1];
+      } else if (base64Data.indexOf('base64,') !== -1) {
+        base64Data = base64Data.split('base64,')[1];
+      }
+
+      const decoded = Utilities.base64Decode(base64Data);
+      const fileName = data.fileName || ('khalifah_upload_' + new Date().getTime() + '.png');
+      const blob = Utilities.newBlob(decoded, mimeType, fileName);
+
+      // สร้างหรือค้นหาโฟลเดอร์สำหรับเก็บไฟล์รูปภาพระบบใน Google Drive
+      const folderName = 'Khalifah_System_Uploads';
+      const folders = DriveApp.getFoldersByName(folderName);
+      let folder;
+      if (folders.hasNext()) {
+        folder = folders.next();
+      } else {
+        folder = DriveApp.createFolder(folderName);
+      }
+
+      const file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      const fileId = file.getId();
+      const directUrl = 'https://lh3.googleusercontent.com/d/' + fileId;
+
+      // บันทึก URL ใหม่ลงในแท็บ [การตั้งค่าระบบ] ถ้าเป็นรูปโลโก้
+      if (data.action === 'uploadLogo' || data.isLogo) {
+        let sheet = ss.getSheetByName(SHEET_SETTINGS);
+        if (sheet) {
+          sheet.getRange('B6').setValue(directUrl);
+          sheet.getRange('B7').setValue(new Date().toLocaleString('th-TH'));
+        }
+      }
+
+      updateSummaryTimestamp(ss);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({
+          success: true,
+          url: directUrl,
+          fileId: fileId,
+          message: 'อัปโหลดรูปภาพลง Google Drive และบันทึกลง Google Sheet เรียบร้อยแล้ว'
+        }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
@@ -299,37 +558,54 @@ function initAllSheets(ss) {
     sheetSummary.getRange('A8:H8').setFontWeight('bold').setFontSize(16).setBackground('#ECFDF5').setFontColor('#047857').setHorizontalAlignment('center');
 
     sheetSummary.getRange('A10:H10').merge()
-      .setValue('💡 หมายเหตุ: ข้อมูลฉบับเต็มของแต่ละกลุ่มถูกจัดเก็บอย่างเป็นระเบียบในแท็บด้านล่าง [นักเรียน], [ครูผู้สอน], [ครูหอพัก], [แอดมินหลัก], และ [ประวัติเช็คละหมาดและวินัย]')
+      .setValue('💡 หมายเหตุ: ข้อมูลฉบับเต็มของแต่ละกลุ่มถูกจัดเก็บอย่างเป็นระเบียบในแท็บด้านล่าง [นักเรียน], [ครูผู้สอน], [ครูหอพัก], [แอดมินหลัก], [ประวัติเช็คละหมาดและวินัย], และ [การตั้งค่าระบบ]')
       .setFontSize(10).setFontColor('#475569').setHorizontalAlignment('center');
   }
 
-  // 2. แท็บนักเรียน
+  // 2. แท็บการตั้งค่าระบบ
+  let sheetSettings = ss.getSheetByName(SHEET_SETTINGS);
+  if (!sheetSettings) {
+    sheetSettings = ss.insertSheet(SHEET_SETTINGS);
+    sheetSettings.appendRow(['หัวข้อการตั้งค่า', 'ค่าปัจจุบัน']);
+    sheetSettings.appendRow(['ชื่อระบบหลัก (App Name)', 'Khalifah Student Discipline Management System']);
+    sheetSettings.appendRow(['ชื่อโปรแกรม/ห้องเรียน', 'โปรแกรมห้องเรียนคอลีฟะห์']);
+    sheetSettings.appendRow(['คณะ/หน่วยงาน', 'คณะวิทยาศาสตร์และเทคโนโลยี']);
+    sheetSettings.appendRow(['มหาวิทยาลัย/สถาบัน', 'มหาวิทยาลัยฟาฏอนี']);
+    sheetSettings.appendRow(['โลโก้ระบบ (Logo URL)', 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&w=160&q=80']);
+    sheetSettings.appendRow(['อัปเดตล่าสุด', new Date().toLocaleString('th-TH')]);
+
+    const headerRange = sheetSettings.getRange('A1:B1');
+    headerRange.setFontWeight('bold').setBackground('#475569').setFontColor('#FFFFFF').setHorizontalAlignment('center');
+    sheetSettings.setFrozenRows(1);
+  }
+
+  // 3. แท็บนักเรียน
   createSheetIfNotExists(ss, SHEET_STUDENTS, [
-    'รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'ระดับชั้น', 'หอพัก', 'เบอร์โทรศัพท์', 'ชื่อผู้ปกครอง', 'เบอร์ผู้ปกครอง', 'คณะ/แผนการเรียน', 'สาขาวิชา', 'อาชีพในอนาคต', 'คะแนนเริ่มต้น', 'เวลาบันทึก'
+    'รหัสนักเรียน', 'ชื่อ-นามสกุล', 'ชื่อเล่น', 'ระดับชั้น', 'หอพัก', 'เบอร์โทรศัพท์', 'ชื่อผู้ปกครอง', 'เบอร์ผู้ปกครอง', 'คณะ/แผนการเรียน', 'สาขาวิชา', 'อาชีพในอนาคต', 'คะแนนเริ่มต้น', 'ลิงก์รูปถ่าย', 'อาจารย์ที่ปรึกษา', 'เวลาบันทึก'
   ], '#0284C7');
 
-  // 3. แท็บครูผู้สอน
+  // 4. แท็บครูผู้สอน
   createSheetIfNotExists(ss, SHEET_TEACHERS, [
     'ไอดีผู้ใช้', 'ชื่อ-นามสกุล', 'ชื่อผู้ใช้ (Username)', 'ชั้น/วิชาที่รับผิดชอบ', 'เบอร์โทรศัพท์', 'สถานะ', 'เวลาบันทึก'
   ], '#0D9488');
 
-  // 4. แท็บครูหอพัก
+  // 5. แท็บครูหอพัก
   createSheetIfNotExists(ss, SHEET_DORM_TEACHERS, [
     'ไอดีผู้ใช้', 'ชื่อ-นามสกุล', 'ชื่อผู้ใช้ (Username)', 'หอพักที่ดูแล', 'เบอร์โทรศัพท์', 'สถานะ', 'เวลาบันทึก'
   ], '#D97706');
 
-  // 5. แท็บแอดมินหลัก
+  // 6. แท็บแอดมินหลัก
   createSheetIfNotExists(ss, SHEET_ADMINS, [
     'ไอดีผู้ใช้', 'ชื่อ-นามสกุล', 'ชื่อผู้ใช้ (Username)', 'ตำแหน่ง/สังกัด', 'เบอร์โทรศัพท์', 'สถานะ', 'เวลาบันทึก'
   ], '#4F46E5');
 
-  // 6. แท็บประวัติเช็คละหมาดและวินัย
+  // 7. แท็บประวัติเช็คละหมาดและวินัย (รวมรูปถ่ายเช็คสด)
   createSheetIfNotExists(ss, SHEET_RECORDS, [
     'วันที่', 'รหัสนักเรียน', 'ชื่อนักเรียน',
     'ซุบฮิ', 'ซุฮรี', 'อัศรี', 'มัฆริบ', 'อิชาอ์',
     'หะละเกาะฮ์-ซุบฮิ', 'หะละเกาะฮ์-อัศรี', 'หะละเกาะฮ์-อิชาอ์',
     'สายกิจกรรม', 'การแต่งกาย', 'โทรศัพท์', 'เวรทำความสะอาด',
-    'หมายเหตุ', 'ผู้บันทึก', 'เวลาบันทึก'
+    'หมายเหตุ', 'ผู้บันทึก', 'ลิงก์รูปถ่ายเช็คสด', 'เวลาบันทึก'
   ], '#059669');
 }
 
@@ -414,8 +690,45 @@ function updateSummaryTimestamp(ss) {
     updateScoreRules(rulesForm);
   };
 
-  // Image File Upload Handler (FileReader to Base64)
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Helper to compress and convert image to embedded Base64 Data URL
+  const resizeImageToBase64 = (file: File, maxWidth = 350, maxHeight = 350): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          if (width > maxWidth || height > maxHeight) {
+            if (width > height) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            } else {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve(e.target?.result as string);
+          }
+        };
+        img.onerror = () => reject('Load image failed');
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject('Read file failed');
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Image File Upload Handler (Direct Embedding into System & LocalStorage)
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -424,23 +737,35 @@ function updateSummaryTimestamp(ss) {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      showSnackbar('ขนาดไฟล์รูปภาพเกิน 2MB โปรดเลือกไฟล์ขนาดเล็กลง', 'warning');
-      return;
-    }
+    try {
+      showSnackbar('กำลังฝังรูปภาพโลโก้ลงในระบบ...', 'info');
+      const embeddedBase64 = await resizeImageToBase64(file, 350, 350);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Url = event.target?.result as string;
-      setOrgForm((prev) => ({ ...prev, logoUrl: base64Url }));
-      showSnackbar('อัปโหลดรูปภาพโลโก้สำเร็จ (อย่าลืมกดบันทึก)', 'info');
-    };
-    reader.readAsDataURL(file);
+      // 1. Set form state
+      setOrgForm((prev) => ({ ...prev, logoUrl: embeddedBase64 }));
+
+      // 2. Update system org settings state & save to LocalStorage directly
+      const newSettings = { ...orgForm, logoUrl: embeddedBase64 };
+      updateOrgSettings(newSettings);
+
+      // 3. Asynchronously post to Google Apps Script if URL configured (non-blocking background save)
+      if (orgForm.apiUrl) {
+        postOrgSettingsToGoogleScript(orgForm.apiUrl, newSettings).catch((err) =>
+          console.warn('Background sync org settings warning:', err)
+        );
+      }
+
+      showSnackbar('ฝังรูปภาพโลโก้เข้าสู่ระบบเรียบร้อยแล้ว! โลโก้จะแสดงผลทันทีโดยไม่ต้องรอซิงค์', 'success');
+    } catch (err) {
+      console.error('Error embedding logo:', err);
+      showSnackbar('ไม่สามารถประมวลผลไฟล์รูปภาพได้ โปรดลองอีกครั้ง', 'error');
+    }
   };
 
   const handleClearLogo = () => {
     setOrgForm((prev) => ({ ...prev, logoUrl: '' }));
-    showSnackbar('ลบรูปภาพโลโก้ออกแล้ว', 'info');
+    updateOrgSettings({ ...orgForm, logoUrl: '' });
+    showSnackbar('ลบรูปภาพโลโก้ออกเรียบร้อยแล้ว ระบบจะแสดงไอคอนค่าเริ่มต้น', 'info');
   };
 
   // Account Modal Handlers

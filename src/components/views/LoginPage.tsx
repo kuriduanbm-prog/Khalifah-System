@@ -4,6 +4,7 @@ import { UserRole, User, Student } from '../../types';
 import { SystemLogo } from '../common/SystemLogo';
 import { postStudentRegistrationToGoogleScript } from '../../services/api';
 import { CAREER_PRESETS } from '../common/AnimatedCareerAvatar';
+import { compressImageFile } from '../../utils/imageCompressor';
 import {
   KeyRound,
   ShieldCheck,
@@ -21,7 +22,10 @@ import {
   HelpCircle,
   RotateCcw,
   Sun,
-  Moon
+  Moon,
+  Upload,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
@@ -57,7 +61,26 @@ export const LoginPage: React.FC = () => {
     phone: '',
     parentName: '',
     parentPhone: '',
+    photo: '',
   });
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      if (file.size > 10 * 1024 * 1024) {
+        showSnackbar('ขนาดไฟล์รูปภาพเกิน 10MB กรุณาเลือกไฟล์ขนาดไม่เกิน 10MB', 'warning');
+        return;
+      }
+      showSnackbar('กำลังประมวลผลและบีบอัดรูปถ่าย...', 'info');
+      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.85);
+      setRegForm((prev) => ({ ...prev, photo: compressedDataUrl }));
+      showSnackbar('อัปโหลดรูปถ่ายเรียบร้อย พร้อมบันทึกลง Google Sheet', 'success');
+    } catch (err: any) {
+      showSnackbar(err.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปถ่าย', 'danger');
+    }
+  };
 
   // Staff / Admin Direct Code Login state
   const [staffUsername, setStaffUsername] = useState('');
@@ -134,7 +157,7 @@ export const LoginPage: React.FC = () => {
       dorm: regForm.dorm,
       advisor: 'อาจารย์ที่ปรึกษา คอลีฟะห์',
       status: 'ปกติ',
-      photo: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=250&q=80',
+      photo: regForm.photo || 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=250&q=80',
       initialScore: 100, // Default 100 points
       isRegistered: true,
     };
@@ -397,6 +420,33 @@ export const LoginPage: React.FC = () => {
                     <UserIcon className="w-4 h-4" />
                     <span>ส่วนที่ 1: ข้อมูลส่วนตัวนักเรียน</span>
                   </h4>
+
+                  {/* Photo Upload Section (Supports up to 10MB) */}
+                  <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700">
+                    <img
+                      src={regForm.photo || 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=250&q=80'}
+                      alt="Student Preview"
+                      className="w-14 h-14 rounded-xl object-cover ring-2 ring-sky-500/30 shrink-0"
+                    />
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                        📸 รูปถ่ายประจำตัวนักเรียน (รองรับสูงสุด 10MB)
+                      </span>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        รูปถ่ายจะบันทึกลงใน Google Sheet [แท็บนักเรียน] อัตโนมัติ
+                      </p>
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-[11px] font-bold cursor-pointer transition-all shadow-xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{regForm.photo ? 'เปลี่ยนรูปถ่าย (สูงสุด 10MB)' : 'เลือกรูปถ่าย (สูงสุด 10MB)'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>

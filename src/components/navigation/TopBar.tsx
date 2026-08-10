@@ -7,7 +7,8 @@ import {
   CloudUpload,
   LogOut,
   Download,
-  User
+  User,
+  RefreshCw
 } from 'lucide-react';
 
 export const TopBar: React.FC<{ onOpenMobileMenu?: () => void }> = ({ onOpenMobileMenu }) => {
@@ -20,6 +21,7 @@ export const TopBar: React.FC<{ onOpenMobileMenu?: () => void }> = ({ onOpenMobi
     isOffline,
     unsyncedCount,
     syncAllRecords,
+    manualSyncFromGoogleScript,
     pwaInstallPrompt,
     triggerPwaInstall,
     activeTab,
@@ -65,6 +67,17 @@ export const TopBar: React.FC<{ onOpenMobileMenu?: () => void }> = ({ onOpenMobi
             >
               <Download className="w-3.5 h-3.5" />
               <span>ติดตั้งแอป</span>
+            </button>
+          )}
+
+          {/* Sync / Refresh from Google Apps Script */}
+          {orgSettings.apiUrl && !isOffline && (
+            <button
+              onClick={() => manualSyncFromGoogleScript(false)}
+              className="p-2 rounded-full hover:bg-white/10 transition-colors text-sky-100 hover:text-white"
+              title="ดึงข้อมูลและโลโก้ล่าสุดจาก Google Sheet"
+            >
+              <RefreshCw className="w-4 h-4" />
             </button>
           )}
 

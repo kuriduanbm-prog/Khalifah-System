@@ -15,7 +15,16 @@ import {
   DEFAULT_ORG_SETTINGS,
   INITIAL_USER_ACCOUNTS,
 } from '../data/mockData';
-import { postRecordToGoogleScript } from '../services/api';
+import {
+  postRecordToGoogleScript,
+  postStudentRegistrationToGoogleScript,
+  postOrgSettingsToGoogleScript,
+  postUserAccountToGoogleScript,
+  fetchStudentsFromGoogleScript,
+  fetchRecordsFromGoogleScript,
+  fetchUsersFromGoogleScript,
+  fetchSettingsFromGoogleScript
+} from '../services/api';
 
 export interface SnackbarMessage {
   id: string;
@@ -72,6 +81,7 @@ interface AppContextType {
   confirmDialog: ConfirmDialogState;
   showConfirm: (dialog: Omit<ConfirmDialogState, 'isOpen'>) => void;
   closeConfirm: () => void;
+  manualSyncFromGoogleScript: (silent?: boolean) => Promise<void>;
   pwaInstallPrompt: any;
   triggerPwaInstall: () => void;
   resetToDefaultData: () => void;
@@ -197,6 +207,98 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [darkMode]);
 
+  // Manual & Auto sync students, records, users, and settings from Google Apps Script if URL is configured
+  const syncFromGoogleScript = async (silent = true) => {
+    if (!orgSettings.apiUrl || isOffline) return;
+
+    try {
+      if (!silent) showSnackbar('กำลังดึงข้อมูลล่าสุดจาก Google Sheet...', 'info');
+
+      const remoteSettings = await fetchSettingsFromGoogleScript(orgSettings.apiUrl);
+      if (remoteSettings) {
+        setOrgSettings((prev) => {
+          // If local logoUrl is an embedded base64 image, prioritize it over empty or default remote string
+          const resolvedLogoUrl =
+            remoteSettings.logoUrl && remoteSettings.logoUrl.trim() !== ''
+              ? remoteSettings.logoUrl
+              : prev.logoUrl;
+
+          if (
+            prev.logoUrl === resolvedLogoUrl &&
+            prev.appName === (remoteSettings.appName || prev.appName) &&
+            prev.programName === (remoteSettings.programName || prev.programName)
+          ) {
+            return prev;
+          }
+          return {
+            ...prev,
+            appName: remoteSettings.appName || prev.appName,
+            programName: remoteSettings.programName || prev.programName,
+            faculty: remoteSettings.faculty || prev.faculty,
+            university: remoteSettings.university || prev.university,
+            logoUrl: resolvedLogoUrl
+          };
+        });
+      }
+
+      const remoteStudents = await fetchStudentsFromGoogleScript(orgSettings.apiUrl);
+      if (Array.isArray(remoteStudents) && remoteStudents.length > 0) {
+        setStudents((prev) => {
+          const map = new Map();
+          prev.forEach((s) => map.set(s.id, s));
+          remoteStudents.forEach((s) => map.set(s.id, s));
+          return Array.from(map.values());
+        });
+      }
+
+      const remoteRecords = await fetchRecordsFromGoogleScript(orgSettings.apiUrl);
+      if (Array.isArray(remoteRecords) && remoteRecords.length > 0) {
+        setRecords((prev) => {
+          const map = new Map();
+          prev.forEach((r) => map.set(r.id, r));
+          remoteRecords.forEach((r) => map.set(r.id, r));
+          return Array.from(map.values());
+        });
+      }
+
+      const remoteUsers = await fetchUsersFromGoogleScript(orgSettings.apiUrl);
+      if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+        setUserAccounts((prev) => {
+          const map = new Map();
+          prev.forEach((u) => map.set(u.username, u));
+          remoteUsers.forEach((u) => {
+            map.set(u.username, {
+              id: u.id || `usr_${u.username}`,
+              name: u.name,
+              username: u.username,
+              role: u.role,
+              assignedClassOrDorm: u.assignedClassOrDorm,
+              phone: u.phone,
+              status: u.status || 'ใช้งานปกติ'
+            });
+          });
+          return Array.from(map.values());
+        });
+      }
+
+      if (!silent) showSnackbar('อัปเดตข้อมูลและโลโก้จาก Google Sheet ล่าสุดเรียบร้อยแล้ว', 'success');
+    } catch (err) {
+      console.warn('Auto sync warning:', err);
+      if (!silent) showSnackbar('ไม่สามารถซิงค์ข้อมูลกับ Google Sheet ได้', 'warning');
+    }
+  };
+
+  useEffect(() => {
+    if (!orgSettings.apiUrl || isOffline) return;
+
+    syncFromGoogleScript(true);
+    const interval = setInterval(() => {
+      syncFromGoogleScript(true);
+    }, 10000); // Auto sync every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [orgSettings.apiUrl, isOffline]);
+
   // Tab switching permission guard
   const setActiveTab = (tab: string) => {
     if (!currentUser && tab !== 'login') {
@@ -301,13 +403,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // Student CRUD
-  const addStudent = (student: Student) => {
-    setStudents((prev) => [student, ...prev]);
+  const addStudent = async (student: Student) => {
+    setStudents((prev) => {
+      const exists = prev.some((s) => s.id === student.id);
+      if (exists) {
+        return prev.map((s) => (s.id === student.id ? student : s));
+      }
+      return [student, ...prev];
+    });
+
+    if (orgSettings.apiUrl && !isOffline) {
+      await postStudentRegistrationToGoogleScript(orgSettings.apiUrl, student);
+    }
+
     showSnackbar(`เพิ่มนักเรียน ${student.fullName} เรียบร้อย`, 'success');
   };
 
-  const updateStudent = (updatedStudent: Student) => {
+  const updateStudent = async (updatedStudent: Student) => {
     setStudents((prev) => prev.map((s) => (s.id === updatedStudent.id ? updatedStudent : s)));
+    if (orgSettings.apiUrl && !isOffline) {
+      await postStudentRegistrationToGoogleScript(orgSettings.apiUrl, updatedStudent);
+    }
     showSnackbar(`อัปเดตข้อมูล ${updatedStudent.fullName} เรียบร้อย`, 'success');
   };
 
@@ -323,7 +439,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Try posting to Google Apps Script REST API if URL exists and online
     if (orgSettings.apiUrl && !isOffline) {
-      const res = await postRecordToGoogleScript(orgSettings.apiUrl, newRecord);
+      const res = await postRecordToGoogleScript(orgSettings.apiUrl, newRecord, newRecord.photoUrl);
       synced = res.success;
     }
 
@@ -358,8 +474,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showSnackbar('อัปเดตกฎเกณฑ์การให้คะแนนเรียบร้อย', 'success');
   };
 
-  const updateOrgSettings = (newSettings: OrgSettings) => {
+  const updateOrgSettings = async (newSettings: OrgSettings) => {
     setOrgSettings(newSettings);
+    if (newSettings.apiUrl && !isOffline) {
+      await postOrgSettingsToGoogleScript(newSettings.apiUrl, {
+        appName: newSettings.appName,
+        programName: newSettings.programName,
+        faculty: newSettings.faculty,
+        university: newSettings.university,
+        logoUrl: newSettings.logoUrl
+      });
+    }
     showSnackbar('อัปเดตข้อมูลองค์กรและการเชื่อมต่อ API เรียบร้อย', 'success');
   };
 
@@ -399,8 +524,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addUserAccount = (acc: UserAccount) => {
+  const addUserAccount = async (acc: UserAccount) => {
     setUserAccounts((prev) => [acc, ...prev]);
+    if (orgSettings.apiUrl && !isOffline) {
+      await postUserAccountToGoogleScript(orgSettings.apiUrl, acc);
+    }
     showSnackbar(`เพิ่มบัญชีผู้ใช้งาน ${acc.name} เรียบร้อย`, 'success');
   };
 
@@ -467,6 +595,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         confirmDialog,
         showConfirm,
         closeConfirm,
+        manualSyncFromGoogleScript: syncFromGoogleScript,
         pwaInstallPrompt,
         triggerPwaInstall,
         resetToDefaultData,

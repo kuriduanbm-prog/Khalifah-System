@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
+import { compressImageFile } from '../../utils/imageCompressor';
 import {
   Phone,
   Home,
@@ -11,13 +12,25 @@ import {
   Clock,
   XCircle,
   Briefcase,
-  Sparkles
+  Sparkles,
+  Upload,
+  Camera
 } from 'lucide-react';
 import { calculateStudentTotalScore, getScoreBadgeInfo } from '../../utils/scoreCalculator';
 import { AnimatedCareerAvatar } from '../common/AnimatedCareerAvatar';
 
 export const StudentProfileView: React.FC = () => {
-  const { students, selectedStudentId, records, scoreRules, orgSettings, setActiveTab, currentUser } = useApp();
+  const {
+    students,
+    selectedStudentId,
+    records,
+    scoreRules,
+    orgSettings,
+    setActiveTab,
+    currentUser,
+    updateStudent,
+    showSnackbar
+  } = useApp();
 
   const student = useMemo(() => {
     if (currentUser) {
@@ -35,6 +48,24 @@ export const StudentProfileView: React.FC = () => {
     if (!student) return [];
     return records.filter((r) => r.studentId === student.id).sort((a, b) => b.date.localeCompare(a.date));
   }, [student, records]);
+
+  const handleProfilePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !student) return;
+
+    try {
+      if (file.size > 10 * 1024 * 1024) {
+        showSnackbar('ขนาดไฟล์รูปภาพเกิน 10MB กรุณาเลือกไฟล์ขนาดไม่เกิน 10MB', 'warning');
+        return;
+      }
+      showSnackbar('กำลังบีบอัดรูปถ่ายและบันทึกลง Google Sheet...', 'info');
+      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.85);
+      await updateStudent({ ...student, photo: compressedDataUrl });
+      showSnackbar('อัปเดตรูปถ่ายประจำตัวและบันทึกลง Google Sheet [แท็บนักเรียน] เรียบร้อย!', 'success');
+    } catch (err: any) {
+      showSnackbar(err.message || 'เกิดข้อผิดพลาดในการเปลี่ยนรูปถ่าย', 'danger');
+    }
+  };
 
   if (!student) {
     return (
@@ -99,11 +130,26 @@ export const StudentProfileView: React.FC = () => {
       {/* Main Student Header Profile Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-5 shadow-sm">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
-          <img
-            src={student.photo}
-            alt={student.fullName}
-            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-md shrink-0"
-          />
+          <div className="relative group shrink-0">
+            <img
+              src={student.photo}
+              alt={student.fullName}
+              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-emerald-500/30 shadow-md"
+            />
+            <label
+              title="คลิกเพื่อเปลี่ยนรูปถ่ายประจำตัว (รองรับไฟล์สูงสุด 10MB)"
+              className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 rounded-2xl flex flex-col items-center justify-center text-white cursor-pointer transition-all duration-200"
+            >
+              <Camera className="w-6 h-6 text-emerald-300 animate-bounce" />
+              <span className="text-[10px] font-bold mt-1 text-center px-1">เปลี่ยนรูป (10MB)</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePhotoChange}
+                className="hidden"
+              />
+            </label>
+          </div>
 
           <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">

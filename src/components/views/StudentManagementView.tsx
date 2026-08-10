@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { Student, StudentStatus } from '../../types';
 import { postStudentRegistrationToGoogleScript } from '../../services/api';
+import { compressImageFile } from '../../utils/imageCompressor';
 import {
   UserPlus,
   Search,
@@ -32,7 +33,8 @@ export const StudentManagementView: React.FC = () => {
     deleteStudent,
     setSelectedStudentId,
     setActiveTab,
-    showConfirm
+    showConfirm,
+    showSnackbar
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -147,6 +149,24 @@ export const StudentManagementView: React.FC = () => {
     setEditingStudent(student);
     setFormData(student);
     setIsModalOpen(true);
+  };
+
+  const handleModalPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      if (file.size > 10 * 1024 * 1024) {
+        showSnackbar('ขนาดไฟล์รูปภาพเกิน 10MB กรุณาเลือกไฟล์ขนาดไม่เกิน 10MB', 'warning');
+        return;
+      }
+      showSnackbar('กำลังประมวลผลรูปถ่าย...', 'info');
+      const compressedDataUrl = await compressImageFile(file, 800, 800, 0.85);
+      setFormData((prev) => ({ ...prev, photo: compressedDataUrl }));
+      showSnackbar('อัปโหลดและบีบอัดรูปถ่ายเรียบร้อย (พร้อมบันทึกลง Google Sheet)', 'success');
+    } catch (err: any) {
+      showSnackbar(err.message || 'เกิดข้อผิดพลาดในการอัปโหลดรูปถ่าย', 'danger');
+    }
   };
 
   const handleSave = (e: React.FormEvent) => {
@@ -568,15 +588,35 @@ export const StudentManagementView: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    รูปถ่ายนักเรียน (URL)
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    📸 รูปถ่ายประจำตัวนักเรียน (อัปโหลดไฟล์รองรับสูงสุด 10MB หรือระบุ URL)
                   </label>
-                  <input
-                    type="text"
-                    value={formData.photo}
-                    onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none text-slate-900 dark:text-slate-100"
-                  />
+                  <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <img
+                      src={formData.photo || 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=250&q=80'}
+                      alt="Student"
+                      className="w-12 h-12 rounded-lg object-cover ring-1 ring-emerald-500/30 shrink-0"
+                    />
+                    <div className="flex-1 space-y-1 min-w-0">
+                      <input
+                        type="text"
+                        placeholder="ลิงก์รูปถ่าย (URL)"
+                        value={formData.photo}
+                        onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
+                        className="w-full px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none"
+                      />
+                      <label className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-[11px] font-bold cursor-pointer transition-all shadow-xs">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>เลือกรูปถ่ายจากอุปกรณ์ (สูงสุด 10MB)</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleModalPhotoUpload}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

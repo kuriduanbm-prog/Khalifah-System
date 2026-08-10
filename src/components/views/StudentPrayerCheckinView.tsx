@@ -579,6 +579,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
       note: `เช็คละหมาดสดเมื่อ ${timestampStr} ณ ${locationName}`,
       recorder: `${student.fullName} (นักเรียนเช็คเอง)`,
       timestamp: new Date().toISOString(),
+      photoUrl,
     };
 
     await addOrUpdateRecord(newRecord);
