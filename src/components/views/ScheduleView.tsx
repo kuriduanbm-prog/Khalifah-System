@@ -881,43 +881,32 @@ export const ScheduleView: React.FC = () => {
       {/* Filter and Day Selector Toolbar */}
       <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          {/* Class Grade Selector Tabs / Student Grade Badge */}
-          {!isStudent ? (
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap mr-1">
-                ระดับชั้น:
-              </span>
-              {['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'].map((grade) => {
-                const isSelected = selectedYear === grade;
-                return (
-                  <button
-                    key={grade}
-                    type="button"
-                    onClick={() => {
-                      setSelectedYear(grade);
-                      if (imageYearFilter === 'auto') setImageYearFilter('auto');
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-sky-600 text-white shadow-md ring-2 ring-sky-400/30'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    ชั้น {grade}
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 py-0.5">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                ตารางเรียนนักเรียน:
-              </span>
-              <span className="px-3 py-1 bg-sky-600 text-white text-xs font-extrabold rounded-xl shadow-xs">
-                ระดับชั้น {selectedYear}
-              </span>
-            </div>
-          )}
+          {/* Class Grade Selector Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap mr-1">
+              ระดับชั้น:
+            </span>
+            {['ม.1', 'ม.2', 'ม.3', 'ม.4', 'ม.5', 'ม.6'].map((grade) => {
+              const isSelected = selectedYear === grade;
+              return (
+                <button
+                  key={grade}
+                  type="button"
+                  onClick={() => {
+                    setSelectedYear(grade);
+                    if (imageYearFilter === 'auto') setImageYearFilter('auto');
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all cursor-pointer ${
+                    isSelected
+                      ? 'bg-sky-600 text-white shadow-md ring-2 ring-sky-400/30'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  ชั้น {grade}
+                </button>
+              );
+            })}
+          </div>
 
           {/* Search Box */}
           <div className="relative flex-1 max-w-md">

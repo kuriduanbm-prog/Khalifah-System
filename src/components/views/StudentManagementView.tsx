@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../../context/AppContext';
 import { Student, StudentStatus } from '../../types';
+import { postStudentRegistrationToGoogleScript } from '../../services/api';
 import {
   UserPlus,
   Search,
@@ -25,6 +26,7 @@ export const StudentManagementView: React.FC = () => {
     students,
     records,
     scoreRules,
+    orgSettings,
     addStudent,
     updateStudent,
     deleteStudent,
@@ -155,6 +157,9 @@ export const StudentManagementView: React.FC = () => {
       updateStudent(formData);
     } else {
       addStudent(formData);
+      if (orgSettings.apiUrl) {
+        postStudentRegistrationToGoogleScript(orgSettings.apiUrl, formData);
+      }
     }
     setIsModalOpen(false);
   };
@@ -255,89 +260,116 @@ export const StudentManagementView: React.FC = () => {
       </div>
 
       {/* Student Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredStudents.map((s) => {
-          const totalScore = calculateStudentTotalScore(s.id, s.initialScore ?? 100, records, scoreRules);
-          const badge = getScoreBadgeInfo(totalScore);
-
-          return (
-            <div
-              key={s.id}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+      {filteredStudents.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center space-y-4 shadow-sm">
+          <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto ring-1 ring-emerald-200 dark:ring-emerald-800">
+            <GraduationCap className="w-8 h-8" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+              {students.length === 0 ? 'ยังไม่มีรายชื่อนักเรียนในระบบ' : 'ไม่พบนักเรียนตามเงื่อนไขที่ค้นหา'}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              {students.length === 0
+                ? 'แอดมินหลักสามารถกดปุ่ม "เพิ่มนักเรียนใหม่" เพื่อเริ่มบันทึกข้อมูลรายชื่อนักเรียนในห้องเรียนคอลีฟะห์ได้ทันที'
+                : 'ลองปรับเปลี่ยนคำค้นหา หรือเปลี่ยนตัวกรองระดับชั้น/หอพักเพื่อดูรายชื่อนักเรียน'}
+            </p>
+          </div>
+          {students.length === 0 && (
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-amber-300 font-bold rounded-2xl text-xs shadow-md transition-all active:scale-95"
             >
-              <div>
-                <div className="flex items-start gap-3.5 mb-3">
-                  <img
-                    src={s.photo}
-                    alt={s.fullName}
-                    className="w-14 h-14 rounded-2xl object-cover ring-2 ring-emerald-600/30 shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[10px] font-mono font-bold text-slate-400">{s.id}</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.colorClass}`}>
-                        {badge.labelThai.split(' ')[0]}
-                      </span>
-                    </div>
+              <UserPlus className="w-4 h-4" />
+              <span>เพิ่มนักเรียนคนแรก</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredStudents.map((s) => {
+            const totalScore = calculateStudentTotalScore(s.id, s.initialScore ?? 100, records, scoreRules);
+            const badge = getScoreBadgeInfo(totalScore);
 
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate mt-0.5">
-                      {s.fullName} ({s.nickname})
-                    </h3>
-
-                    <p className="text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
-                      {s.programme} - {typeof s.year === 'string' ? s.year : `ปี ${s.year}`}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
-                  <div className="flex items-center gap-2">
-                    <Home className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{s.dorm}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>โทร: {s.phone} | ผปค: {s.parentPhone}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-100 dark:border-slate-800">
+            return (
+              <div
+                key={s.id}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+              >
                 <div>
-                  <span className="text-[10px] text-slate-400 block font-medium">คะแนนความประพฤติ (เต็ม 100)</span>
-                  <span className="text-base font-black text-slate-900 dark:text-slate-100">
-                    {totalScore} <span className="text-xs font-normal text-slate-500">/ 100 คะแนน</span>
-                  </span>
+                  <div className="flex items-start gap-3.5 mb-3">
+                    <img
+                      src={s.photo}
+                      alt={s.fullName}
+                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-emerald-600/30 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-mono font-bold text-slate-400">{s.id}</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badge.colorClass}`}>
+                          {badge.labelThai.split(' ')[0]}
+                        </span>
+                      </div>
+
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate mt-0.5">
+                        {s.fullName} ({s.nickname})
+                      </h3>
+
+                      <p className="text-xs text-emerald-800 dark:text-emerald-400 font-semibold mt-0.5">
+                        {s.programme} - {typeof s.year === 'string' ? s.year : `ปี ${s.year}`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
+                    <div className="flex items-center gap-2">
+                      <Home className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className="truncate">{s.dorm}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span>โทร: {s.phone} | ผปค: {s.parentPhone}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => handleViewProfile(s.id)}
-                    className="p-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-xl hover:bg-emerald-100 transition-colors"
-                    title="ดูโปรไฟล์และประวัติการละหมาด"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleOpenEdit(s)}
-                    className="p-2 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl hover:bg-slate-200 transition-colors"
-                    title="แก้ไขข้อมูลนักเรียน"
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(s)}
-                    className="p-2 bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 rounded-xl hover:bg-rose-100 transition-colors"
-                    title="ลบนักเรียน"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                <div className="flex items-center justify-between pt-4 mt-3 border-t border-slate-100 dark:border-slate-800">
+                  <div>
+                    <span className="text-[10px] text-slate-400 block font-medium">คะแนนความประพฤติ (เต็ม 100)</span>
+                    <span className="text-base font-black text-slate-900 dark:text-slate-100">
+                      {totalScore} <span className="text-xs font-normal text-slate-500">/ 100 คะแนน</span>
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleViewProfile(s.id)}
+                      className="p-2 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 rounded-xl hover:bg-emerald-100 transition-colors"
+                      title="ดูโปรไฟล์และประวัติการละหมาด"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleOpenEdit(s)}
+                      className="p-2 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 rounded-xl hover:bg-slate-200 transition-colors"
+                      title="แก้ไขข้อมูลนักเรียน"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(s)}
+                      className="p-2 bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 rounded-xl hover:bg-rose-100 transition-colors"
+                      title="ลบนักเรียน"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Add / Edit Student Modal */}
       {isModalOpen && createPortal(

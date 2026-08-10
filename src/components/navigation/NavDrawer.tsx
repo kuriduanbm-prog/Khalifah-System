@@ -54,27 +54,22 @@ export const NavDrawer: React.FC = () => {
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shrink-0 min-h-[calc(100vh-65px)]">
-      {/* Current Role Banner */}
-      <div className="p-4 m-3 bg-sky-50 dark:bg-sky-950/60 rounded-2xl border border-sky-200/60 dark:border-sky-800/60">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-sky-600 text-white rounded-xl shadow-sm">
-            <Sparkles className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-[11px] font-medium text-sky-800 dark:text-sky-300 block">สิทธิ์การใช้งาน</span>
-            <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-              {currentUser?.role ? currentUser.role : 'นักเรียน/ผู้ปกครอง'}
-            </span>
+      {/* Current Role Banner (Only for admin/teachers) */}
+      {!isStudent && (
+        <div className="p-4 m-3 bg-sky-50 dark:bg-sky-950/60 rounded-2xl border border-sky-200/60 dark:border-sky-800/60">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-sky-600 text-white rounded-xl shadow-sm">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[11px] font-medium text-sky-800 dark:text-sky-300 block">สิทธิ์การใช้งาน</span>
+              <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                {currentUser?.role ? currentUser.role : 'ผู้ดูแลระบบ/อาจารย์'}
+              </span>
+            </div>
           </div>
         </div>
-        {isStudent && (
-          <div className="mt-2.5">
-            <p className="text-[10px] text-slate-600 dark:text-slate-300 bg-white/70 dark:bg-slate-900/70 p-2 rounded-xl leading-relaxed border border-sky-100 dark:border-sky-900">
-              🔒 สำหรับนักเรียน: ดูผลการเรียน, ตารางเรียน, เช็คละหมาด และจัดการรหัสผ่านส่วนตัว
-            </p>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Navigation List */}
       <nav className="flex-1 px-3 py-2 space-y-1">

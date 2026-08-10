@@ -53,6 +53,7 @@ export async function postStudentRegistrationToGoogleScript(apiUrl: string, stud
   try {
     const payload = {
       action: 'registerStudent',
+      role: 'นักเรียน',
       id: student.id,
       fullName: student.fullName,
       nickname: student.nickname,
@@ -61,6 +62,9 @@ export async function postStudentRegistrationToGoogleScript(apiUrl: string, stud
       phone: student.phone,
       parentName: student.parentName || '',
       parentPhone: student.parentPhone,
+      faculty: student.faculty || '',
+      programme: student.programme || '',
+      futureCareer: student.futureCareer || '',
       initialScore: student.initialScore || 100,
       timestamp: new Date().toISOString()
     };
@@ -77,7 +81,7 @@ export async function postStudentRegistrationToGoogleScript(apiUrl: string, stud
       const data = await res.json().catch(() => null);
       return {
         success: true,
-        message: data?.message || 'ลงทะเบียนนักเรียนและผู้ปกครองลง Google Sheet เรียบร้อย',
+        message: data?.message || 'ลงทะเบียนนักเรียนลงในแท็บ นักเรียน ของ Google Sheet เรียบร้อย',
       };
     } else {
       return {
@@ -90,6 +94,51 @@ export async function postStudentRegistrationToGoogleScript(apiUrl: string, stud
     return {
       success: false,
       message: 'บันทึกในระบบเรียบร้อย (ออฟไลน์)',
+    };
+  }
+}
+
+export async function postUserAccountToGoogleScript(
+  apiUrl: string,
+  user: { id?: string; username: string; name: string; role: string; assignedClassOrDorm?: string; phone?: string }
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const payload = {
+      action: 'registerUser',
+      id: user.id || `USER_${Date.now()}`,
+      username: user.username,
+      fullName: user.name,
+      role: user.role,
+      assignedClassOrDorm: user.assignedClassOrDorm || '',
+      phone: user.phone || '',
+      timestamp: new Date().toISOString()
+    };
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const data = await res.json().catch(() => null);
+      return {
+        success: true,
+        message: data?.message || `บันทึกข้อมูลบุคลากร (${user.role}) ลง Google Sheet เรียบร้อย`,
+      };
+    } else {
+      return {
+        success: false,
+        message: `HTTP Error: ${res.status}`,
+      };
+    }
+  } catch (err: any) {
+    console.warn('Google Apps Script postUserAccount POST failed:', err);
+    return {
+      success: false,
+      message: 'บันทึกในเครื่องเรียบร้อย (ออฟไลน์)',
     };
   }
 }

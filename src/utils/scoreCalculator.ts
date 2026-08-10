@@ -67,18 +67,24 @@ export function calculateStudentTotalScore(
   records: DailyRecord[],
   rules: ScoreRule
 ): number {
-  const studentRecords = records.filter((r) => r.studentId === studentId);
-  let totalDelta = 0;
+  const studentRecords = records
+    .filter((r) => r.studentId === studentId)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  let currentScore = Math.min(100, Math.max(0, initialScore));
 
   studentRecords.forEach((record) => {
-    totalDelta += calculateRecordScoreChange(record, rules);
+    const delta = calculateRecordScoreChange(record, rules);
+    currentScore = Math.min(100, Math.max(0, currentScore + delta));
   });
 
-  return Math.max(0, initialScore + totalDelta);
+  return Math.min(100, Math.max(0, currentScore));
 }
 
 export function getScoreBadgeInfo(score: number): ScoreBadgeInfo {
-  if (score > 80) {
+  const clampedScore = Math.min(100, Math.max(0, score));
+
+  if (clampedScore > 80) {
     return {
       level: 'Excellent',
       labelThai: 'ปกติ/ดีเยี่ยม (81-100 คะแนน)',
@@ -86,7 +92,7 @@ export function getScoreBadgeInfo(score: number): ScoreBadgeInfo {
       bgHex: '#10B981',
       textHex: '#FFFFFF',
     };
-  } else if (score >= 71) {
+  } else if (clampedScore >= 71) {
     return {
       level: 'Warning',
       labelThai: 'เตือน/ต้องปรับปรุง (71-80 คะแนน)',
@@ -94,7 +100,7 @@ export function getScoreBadgeInfo(score: number): ScoreBadgeInfo {
       bgHex: '#F59E0B',
       textHex: '#FFFFFF',
     };
-  } else if (score >= 50) {
+  } else if (clampedScore >= 50) {
     return {
       level: 'Critical',
       labelThai: 'วิกฤต/เสี่ยงสัญญาทุน (50-70 คะแนน)',

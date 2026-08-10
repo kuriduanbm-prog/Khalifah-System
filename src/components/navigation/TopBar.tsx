@@ -7,8 +7,7 @@ import {
   CloudUpload,
   LogOut,
   Download,
-  User,
-  GraduationCap
+  User
 } from 'lucide-react';
 
 export const TopBar: React.FC<{ onOpenMobileMenu?: () => void }> = ({ onOpenMobileMenu }) => {
@@ -66,22 +65,6 @@ export const TopBar: React.FC<{ onOpenMobileMenu?: () => void }> = ({ onOpenMobi
             >
               <Download className="w-3.5 h-3.5" />
               <span>ติดตั้งแอป</span>
-            </button>
-          )}
-
-          {/* Quick Student Report Button (for logged-in users) */}
-          {currentUser && (
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-all ${
-                activeTab === 'profile'
-                  ? 'bg-amber-400 text-amber-950 shadow-sm'
-                  : 'bg-sky-600/60 hover:bg-sky-600 text-sky-100 border border-sky-500/50'
-              }`}
-              title="ดูรายงานผลและความประพฤติตนเอง"
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-amber-300" />
-              <span>รายงานผลนักเรียน</span>
             </button>
           )}
 

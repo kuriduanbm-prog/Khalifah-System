@@ -171,7 +171,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
           });
           setIsFetchingGps(false);
           setIsGpsConfirmed(true);
-          showSnackbar('📍 ดึงพิกัด GPS สำเร็จ - เปิดกล้องอัตโนมัติ', 'success');
+          // Silent GPS connection without snackbars
           if (autoStartCam && !capturedPhoto) {
             startCamera();
           }
@@ -180,7 +180,6 @@ export const StudentPrayerCheckinView: React.FC = () => {
           console.warn('Geolocation access error:', err);
           setIsFetchingGps(false);
           setIsGpsConfirmed(false);
-          showSnackbar('❌ ไม่สามารถดึงพิกัด GPS ได้ กรุณาเปิดสิทธิ์พิกัดในเบราว์เซอร์', 'error');
           if (autoStartCam && !capturedPhoto) {
             startCamera();
           }
@@ -190,7 +189,6 @@ export const StudentPrayerCheckinView: React.FC = () => {
     } else {
       setIsFetchingGps(false);
       setIsGpsConfirmed(false);
-      showSnackbar('❌ อุปกรณ์หรือเบราว์เซอร์ไม่รองรับ GPS', 'error');
       if (autoStartCam && !capturedPhoto) {
         startCamera();
       }
@@ -533,65 +531,6 @@ export const StudentPrayerCheckinView: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  // Generate test photo stamp when webcam hardware is unavailable
-  const handleGenerateTestPhoto = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1280;
-    canvas.height = 720;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const grad = ctx.createLinearGradient(0, 0, 1280, 720);
-    grad.addColorStop(0, '#0f172a');
-    grad.addColorStop(1, '#1e293b');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1280, 720);
-
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
-    ctx.beginPath();
-    ctx.arc(640, 300, 160, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 42px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🕌 ภาพถ่ายยืนยันตัวตนละหมาดสด (ระบบจำลอง)', 640, 280);
-
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = 'bold 24px sans-serif';
-    ctx.fillText(`นักเรียน: ${student?.fullName || 'นักเรียน'} [${student?.id || ''}]`, 640, 330);
-
-    const now = new Date();
-    const prayerName = PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label || selectedPrayer;
-
-    drawWatermarkOnCanvas(
-      canvas,
-      ctx,
-      student?.fullName || 'นักเรียน',
-      student?.id || '',
-      prayerName,
-      locationName,
-      now,
-      userCoords,
-      isInsideMosque
-    );
-
-    const dateFormatted = now.toLocaleDateString('th-TH', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const timestampFull = `${dateFormatted} เวลา ${hours}:${minutes}:${seconds} น.`;
-
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
-    setCapturedPhoto(dataUrl);
-    setCapturedTimestamp(timestampFull);
-    saveCheckinRecord(dataUrl, timestampFull);
-  };
-
   const handleRetake = () => {
     setCapturedPhoto(null);
     setCapturedTimestamp(null);
@@ -741,40 +680,6 @@ export const StudentPrayerCheckinView: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-fade-in">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 transform translate-x-4 -translate-y-4 opacity-15 pointer-events-none">
-          <CalendarCheck className="w-56 h-56" />
-        </div>
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/20 text-amber-300 border border-amber-400/30 rounded-full text-xs font-bold mb-2">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>ระบบเช็คละหมาดด้วย GPS มัสยิดอัลฮารอมัยน์</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              เช็คละหมาดด้วยตนเอง
-            </h1>
-            <p className="text-xs sm:text-sm text-emerald-100/90 mt-1">
-              ยืนยันการละหมาดพร้อมรูปถ่าย ประทับวัน เวลา (วินาที) และพิกัด GPS อัตโนมัติ
-            </p>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-3.5 flex items-center gap-3 shrink-0">
-            <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-inner">
-              {student?.fullName.charAt(0)}
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">{student?.fullName}</div>
-              <div className="text-xs text-emerald-200 font-mono">
-                รหัสนักเรียน: {student?.id}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Unified Prayer Check-in & Live Camera Module */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-md space-y-4">
         {/* Card Header: Title + Location & GPS Status */}
@@ -785,10 +690,10 @@ export const StudentPrayerCheckinView: React.FC = () => {
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                <span>เช็คอินละหมาดด้วยกล้องสด & พิกัด GPS</span>
+                <span>ระบบเช็คละหมาดด้วยกล้องสด & พิกัด GPS</span>
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                กดอัปเดตพิกัดเพื่อเปิดกล้อง เลือกรอบละหมาด แล้วถ่ายภาพบันทึกได้ทันที
+                เลือกรอบละหมาด ระบบเชื่อมพิกัด GPS ล่าสุดอัตโนมัติ พร้อมกดถ่ายรูปเช็คละหมาด
               </p>
             </div>
           </div>
@@ -799,8 +704,9 @@ export const StudentPrayerCheckinView: React.FC = () => {
               <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span className="font-semibold">{locationName}</span>
               {isGpsConfirmed && (
-                <span className="text-[10px] bg-emerald-600 text-white px-1.5 py-0.5 rounded font-mono ml-1">
-                  {userCoords.lat.toFixed(4)}°, {userCoords.lng.toFixed(4)}°
+                <span className="text-[10px] bg-emerald-600 text-white px-2 py-0.5 rounded-full font-mono font-bold flex items-center gap-1 ml-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-200 animate-pulse" />
+                  <span>เชื่อมพิกัดแล้ว</span>
                 </span>
               )}
             </div>
@@ -820,7 +726,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
           </div>
         </div>
 
-        {/* Action area: If GPS is not yet confirmed, show the primary activation banner */}
+        {/* Action area: If GPS is not yet confirmed, show activation button */}
         {!isGpsConfirmed ? (
           <div className="p-8 sm:p-12 text-center rounded-3xl bg-slate-50 dark:bg-slate-950 border-2 border-dashed border-emerald-400/60 dark:border-emerald-700/60 space-y-4">
             <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-md">
@@ -828,10 +734,10 @@ export const StudentPrayerCheckinView: React.FC = () => {
             </div>
             <div className="max-w-md mx-auto space-y-1">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
-                📍 กดระบุพิกัดตำแหน่งปัจจุบันล่าสุดเพื่อเปิดกล้อง
+                📍 กำลังจับพิกัดตำแหน่งล่าสุดและเปิดกล้อง
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                ต้องระบุและยืนยันพิกัด GPS ตำแหน่งปัจจุบันล่าสุดก่อนเปิดกล้องและเลือกรอบละหมาด
+                กรุณาอนุญาตสิทธิ์ตำแหน่ง GPS เพื่อเปิดกล้องถ่ายรูปเช็คละหมาด
               </p>
             </div>
             <button
@@ -841,7 +747,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
               className="px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl active:scale-95 transition-all ring-2 ring-emerald-400/60 cursor-pointer inline-flex items-center gap-2"
             >
               <Compass className={`w-5 h-5 ${isFetchingGps ? 'animate-spin text-amber-300' : 'text-amber-300'}`} />
-              <span>{isFetchingGps ? 'กำลังระบุพิกัด GPS...' : '📍 กดอัปเดตพิกัดตำแหน่งล่าสุด & เปิดกล้องทันที'}</span>
+              <span>{isFetchingGps ? 'กำลังระบุพิกัด GPS...' : '📍 กดเชื่อมพิกัด GPS & เปิดกล้อง'}</span>
             </button>
           </div>
         ) : (
@@ -921,48 +827,50 @@ export const StudentPrayerCheckinView: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="bg-slate-900/85 backdrop-blur-md border border-slate-700/80 px-3 py-1.5 rounded-xl text-xs text-sky-300 font-mono font-bold flex items-center gap-1.5 shadow-lg">
-                      <Navigation className="w-3.5 h-3.5 text-sky-400 animate-bounce" />
+                    <div className="bg-emerald-950/90 backdrop-blur-md border border-emerald-500/80 px-3 py-1.5 rounded-xl text-xs text-emerald-300 font-mono font-bold flex items-center gap-1.5 shadow-lg">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                       <span>
-                        GPS: {userCoords.lat.toFixed(4)}°, {userCoords.lng.toFixed(4)}°
+                        GPS เชื่อมแล้ว ({userCoords.lat.toFixed(4)}°, {userCoords.lng.toFixed(4)}°)
                       </span>
                     </div>
                   </div>
 
-                  {/* Bottom Camera Speed Action Bar */}
-                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 p-3 bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl z-10">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={toggleCameraFacing}
-                        className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="สลับกล้อง หน้า/หลัง"
-                      >
-                        <RefreshCw className="w-4 h-4 text-emerald-400" />
-                        <span className="hidden sm:inline">สลับกล้อง ({facingMode === 'user' ? 'หน้า' : 'หลัง'})</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={stopCamera}
-                        className="px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
-                      >
-                        ปิดกล้อง
-                      </button>
-                    </div>
-
-                    {/* Camera Shutter Icon Button - Instantly Captures & Saves */}
+                  {/* Bottom Camera iOS Shutter Controls */}
+                  <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 p-3 bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl z-10">
                     <button
                       type="button"
-                      disabled={isSubmitting}
-                      onClick={handleInstantQuickCheckin}
-                      className="px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2.5 transform active:scale-95 transition-all ring-4 ring-emerald-400/40 cursor-pointer animate-pulse"
-                      title="กดถ่ายรูปและบันทึกทันที"
+                      onClick={toggleCameraFacing}
+                      className="p-3 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      title="สลับกล้อง หน้า/หลัง"
                     >
-                      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-                        <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                      </div>
-                      <span>ถ่ายรูป & บันทึก ({PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label})</span>
+                      <RefreshCw className="w-5 h-5 text-emerald-400" />
+                      <span className="hidden sm:inline">สลับกล้อง ({facingMode === 'user' ? 'หน้า' : 'หลัง'})</span>
+                    </button>
+
+                    {/* iOS Circular Shutter Button */}
+                    <div className="flex flex-col items-center">
+                      <button
+                        type="button"
+                        disabled={isSubmitting}
+                        onClick={handleInstantQuickCheckin}
+                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-4 border-white flex items-center justify-center bg-transparent active:scale-90 transition-transform cursor-pointer shadow-2xl group ring-4 ring-emerald-500/30"
+                        title="กดถ่ายรูปและบันทึกทันที"
+                      >
+                        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white group-hover:bg-slate-100 transition-colors flex items-center justify-center shadow-inner">
+                          <Camera className="w-6 h-6 text-slate-800" />
+                        </div>
+                      </button>
+                      <span className="text-[10px] font-bold text-amber-300 mt-1">
+                        กดถ่าย ({PRAYER_OPTIONS.find((p) => p.key === selectedPrayer)?.label})
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={stopCamera}
+                      className="px-3.5 py-3 rounded-2xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      ปิดกล้อง
                     </button>
                   </div>
                 </div>
@@ -1003,7 +911,7 @@ export const StudentPrayerCheckinView: React.FC = () => {
                   <div>
                     <h3 className="text-base font-bold text-white">กล้องถ่ายรูปเช็คละหมาดสด</h3>
                     <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto leading-relaxed">
-                      กดปุ่มเปิดกล้องและไอคอนถ่ายรูปเพื่อประทับวัน เวลา (วินาที) พิกัด GPS และบันทึกทันที
+                      กดปุ่มเปิดกล้องเพื่อประทับวัน เวลา (วินาที) พิกัด GPS และบันทึกทันที
                     </p>
                   </div>
 
@@ -1023,23 +931,14 @@ export const StudentPrayerCheckinView: React.FC = () => {
                     onChange={handleFileUpload}
                   />
 
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-3 w-full max-w-lg mx-auto">
+                  <div className="flex items-center justify-center pt-3 w-full max-w-sm mx-auto">
                     <button
                       type="button"
                       onClick={() => startCamera()}
-                      className="w-full sm:w-auto flex-1 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40 cursor-pointer"
+                      className="w-full px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition-all ring-2 ring-emerald-400/40 cursor-pointer"
                     >
-                      <Camera className="w-4 h-4 text-amber-300 animate-bounce" />
+                      <Camera className="w-5 h-5 text-amber-300 animate-bounce" />
                       <span>เปิดกล้องถ่ายภาพสด</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleGenerateTestPhoto}
-                      className="w-full sm:w-auto px-4 py-3.5 rounded-2xl bg-amber-600/30 hover:bg-amber-600/50 text-amber-300 border border-amber-500/40 font-bold text-xs shadow-lg flex items-center justify-center gap-1.5 transform active:scale-95 transition-all cursor-pointer"
-                    >
-                      <Sparkles className="w-4 h-4 text-amber-300" />
-                      <span>ถ่ายภาพจำลอง</span>
                     </button>
                   </div>
                 </div>

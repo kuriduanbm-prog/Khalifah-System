@@ -80,6 +80,17 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Clear old mock data if present in localStorage
+  useEffect(() => {
+    const isCleaned = localStorage.getItem('khalifah_cleaned_v1');
+    if (!isCleaned) {
+      localStorage.removeItem('khalifah_students');
+      localStorage.removeItem('khalifah_records');
+      localStorage.removeItem('khalifah_accounts');
+      localStorage.setItem('khalifah_cleaned_v1', 'true');
+    }
+  }, []);
+
   // Current user / role state
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('khalifah_user');
@@ -88,18 +99,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // User accounts list (Admin managed)
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>(() => {
+    const isCleaned = localStorage.getItem('khalifah_cleaned_v1');
+    if (!isCleaned) return INITIAL_USER_ACCOUNTS;
     const saved = localStorage.getItem('khalifah_accounts');
     return saved ? JSON.parse(saved) : INITIAL_USER_ACCOUNTS;
   });
 
   // Students state
   const [students, setStudents] = useState<Student[]>(() => {
+    const isCleaned = localStorage.getItem('khalifah_cleaned_v1');
+    if (!isCleaned) return INITIAL_STUDENTS;
     const saved = localStorage.getItem('khalifah_students');
     return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
   });
 
   // Daily records state
   const [records, setRecords] = useState<DailyRecord[]>(() => {
+    const isCleaned = localStorage.getItem('khalifah_cleaned_v1');
+    if (!isCleaned) return INITIAL_RECORDS;
     const saved = localStorage.getItem('khalifah_records');
     return saved ? JSON.parse(saved) : INITIAL_RECORDS;
   });
@@ -118,7 +135,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Active view tab state (Default is 'login' so Landing page opens directly)
   const [activeTab, setActiveTabRaw] = useState<string>('login');
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>('M50121001');
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('Today');
 
   // Dark mode state

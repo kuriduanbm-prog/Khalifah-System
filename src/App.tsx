@@ -23,6 +23,16 @@ import { KhalifahInfoView } from './components/views/KhalifahInfoView';
 
 function MainContent() {
   const { activeTab, isStudent } = useApp();
+  const mainRef = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    if (mainRef.current) {
+      mainRef.current.scrollTop = 0;
+    }
+  }, [activeTab]);
 
   const renderActiveView = () => {
     switch (activeTab) {
@@ -80,7 +90,7 @@ function MainContent() {
         <NavDrawer />
 
         {/* Main View Container */}
-        <main className="flex-1 p-4 md:p-6 pb-24 md:pb-12 overflow-y-auto">
+        <main ref={mainRef} className="flex-1 p-4 md:p-6 pb-24 md:pb-12 overflow-y-auto">
           {renderActiveView()}
         </main>
       </div>
